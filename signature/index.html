@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ScribblePad - Canvas Drawing App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom scrollbar for color swatches and panels */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.8);
+        }
+        /* Lock screen bounce on mobile */
+        body {
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Canvas drawing cursor */
+        .canvas-container {
+            position: relative;
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-900 text-slate-100 flex flex-col font-sans overflow-hidden">
+
+    <!-- Toast Notification System -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- Header -->
+    <header class="bg-slate-950 border-b border-slate-800 px-6 py-4 flex items-center justify-between shrink-0 select-none">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/20">
+                <i data-lucide="pencil" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-white">ScribblePad</h1>
+                <p class="text-xs text-slate-400 hidden sm:block">Sketch, scribble, design, and export with Gemini AI</p>
+            </div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="flex items-center space-x-2">
+            <button id="btn-undo" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white disabled:opacity-40 disabled:hover:bg-slate-800 transition-all cursor-pointer" title="Undo (Ctrl+Z)">
+                <i data-lucide="undo-2" class="w-5 h-5"></i>
+            </button>
+            <button id="btn-redo" class="p-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white disabled:opacity-40 disabled:hover:bg-slate-800 transition-all cursor-pointer" title="Redo (Ctrl+Y)">
+                <i data-lucide="redo-2" class="w-5 h-5"></i>
+            </button>
+            <div class="h-8 w-[1px] bg-slate-800 mx-1"></div>
+            <button id="btn-clear-trigger" class="p-2.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 border border-rose-900/50 text-rose-300 hover:text-rose-100 transition-all cursor-pointer" title="Clear Canvas">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+            <button id="btn-download" class="flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white px-4 py-2.5 rounded-lg font-medium shadow-md shadow-indigo-500/10 hover:shadow-indigo-500/20 active:scale-95 transition-all cursor-pointer">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span class="text-sm hidden sm:inline">Export PNG</span>
+            </button>
+            <div class="h-8 w-[1px] bg-slate-800 mx-1"></div>
+            <!-- Toggle Button for the AI Panel -->
+            <button id="btn-toggle-ai" class="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2.5 rounded-lg font-medium shadow-md shadow-purple-500/20 active:scale-95 transition-all cursor-pointer">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+                <span class="text-sm hidden lg:inline">✨ AI Studio</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+        
+        <!-- Left Sidebar / Toolbar -->
+        <aside class="w-full lg:w-80 bg-slate-950 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-col shrink-0 select-none z-10">
+            <div class="p-5 space-y-6 overflow-y-auto max-h-[35vh] lg:max-h-none flex-1">
+                
+                <!-- Tools Toggle -->
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Tool Selection</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="tool-brush" class="flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 font-medium transition-all">
+                            <i data-lucide="brush" class="w-4 h-4"></i>
+                            <span>Brush</span>
+                        </button>
+                        <button id="tool-eraser" class="flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl border border-transparent bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-all">
+                            <i data-lucide="eraser" class="w-4 h-4"></i>
+                            <span>Eraser</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Color Palette Selection -->
+                <div id="palette-section">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Stroke Color</h3>
+                        <span id="hex-label" class="text-xs font-mono text-indigo-400">#6366F1</span>
+                    </div>
+                    
+                    <!-- Color Swatches Grid -->
+                    <div class="grid grid-cols-6 gap-2 mb-3">
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-slate-900 ring-2 ring-transparent transition-all cursor-pointer" style="background-color: #ffffff;" data-color="#ffffff"></button>
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-slate-900 ring-2 ring-transparent transition-all cursor-pointer" style="background-color: #94a3b8;" data-color="#94a3b8"></button>
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-slate-900 ring-2 ring-transparent transition-all cursor-pointer" style="background-color: #f43f5e;" data-color="#f43f5e"></button>
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-slate-900 ring-2 ring-transparent transition-all cursor-pointer" style="background-color: #f97316;" data-color="#f97316"></button>
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-slate-900 ring-2 ring-transparent transition-all cursor-pointer" style="background-color: #eab308;" data-color="#eab308"></button>
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-slate-900 ring-2 ring-transparent transition-all cursor-pointer" style="background-color: #22c55e;" data-color="#22c55e"></button>
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-indigo-500 ring-2 ring-indigo-500/50 transition-all cursor-pointer" style="background-color: #6366f1;" data-color="#6366f1"></button>
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-slate-900 ring-2 ring-transparent transition-all cursor-pointer" style="background-color: #06b6d4;" data-color="#06b6d4"></button>
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-slate-900 ring-2 ring-transparent transition-all cursor-pointer" style="background-color: #3b82f6;" data-color="#3b82f6"></button>
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-slate-900 ring-2 ring-transparent transition-all cursor-pointer" style="background-color: #a855f7;" data-color="#a855f7"></button>
+                        <button class="color-swatch w-full aspect-square rounded-lg border-2 border-slate-900 ring-2 ring-transparent transition-all cursor-pointer" style="background-color: #ec4899;" data-color="#ec4899"></button>
+                        <!-- Custom Picker Container -->
+                        <div class="relative w-full aspect-square rounded-lg bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 overflow-hidden group cursor-pointer border border-slate-700">
+                            <input type="color" id="custom-color-picker" value="#6366f1" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none text-white drop-shadow">
+                                <i data-lucide="pipette" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Size / Thickness Control -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Brush Thickness</h3>
+                        <span id="brush-size-label" class="text-xs font-bold text-slate-200 bg-slate-800 px-2 py-0.5 rounded">8px</span>
+                    </div>
+                    <div class="flex items-center space-x-4 py-2">
+                        <i data-lucide="minus" class="w-4 h-4 text-slate-500 shrink-0"></i>
+                        <input type="range" id="brush-size" min="1" max="50" value="8" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                        <i data-lucide="plus" class="w-4 h-4 text-slate-500 shrink-0"></i>
+                    </div>
+
+                    <!-- Dynamic Brush Preview Box -->
+                    <div class="mt-4 bg-slate-900 rounded-xl p-3 border border-slate-800 flex items-center justify-between">
+                        <span class="text-xs text-slate-400">Brush Preview</span>
+                        <div class="w-16 h-16 rounded bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
+                            <div id="brush-preview" class="rounded-full bg-indigo-500 transition-all duration-75" style="width: 8px; height: 8px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Canvas Options (Background grid, dark/light toggle) -->
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Canvas Preferences</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-slate-400 block mb-1.5">Canvas Style</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button id="bg-light" class="canvas-bg-btn text-xs py-2 px-3 rounded-lg border border-indigo-500 bg-indigo-500/10 text-white font-medium">
+                                    Clean White
+                                </button>
+                                <button id="bg-dark" class="canvas-bg-btn text-xs py-2 px-3 rounded-lg border border-transparent bg-slate-900 text-slate-400 hover:text-slate-200">
+                                    Slate Dark
+                                </button>
+                                <button id="bg-grid" class="canvas-bg-btn text-xs py-2 px-3 rounded-lg border border-transparent bg-slate-900 text-slate-400 hover:text-slate-200">
+                                    Grid Overlay
+                                </button>
+                                <button id="bg-dots" class="canvas-bg-btn text-xs py-2 px-3 rounded-lg border border-transparent bg-slate-900 text-slate-400 hover:text-slate-200">
+                                    Blueprint Dots
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                            <span class="text-xs text-slate-400">Transparent PNG Export</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="transparent-export-toggle" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600 peer-checked:after:bg-white"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Developer details / stats footer -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950/80 text-center text-xs text-slate-500">
+                <span>Hold Shift to draw straight lines</span>
+            </div>
+        </aside>
+
+        <!-- Canvas Container -->
+        <div class="flex-1 bg-slate-900 flex items-center justify-center p-4 sm:p-6 overflow-hidden relative">
+            <div id="canvas-container" class="w-full h-full rounded-2xl shadow-2xl border border-slate-800 overflow-hidden relative canvas-container bg-white">
+                <!-- Grid background pattern visual (Behind canvas) -->
+                <div id="canvas-grid-pattern" class="absolute inset-0 pointer-events-none opacity-10" style="background-image: radial-gradient(#000 1px, transparent 1px); background-size: 20px 20px; display: none;"></div>
+                <div id="canvas-grid-lines" class="absolute inset-0 pointer-events-none opacity-5" style="background-image: linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px); background-size: 20px 20px; display: none;"></div>
+
+                <canvas id="paint-canvas" class="absolute inset-0 block w-full h-full cursor-crosshair"></canvas>
+            </div>
+        </div>
+
+        <!-- Right Sidebar / ✨ AI Studio Panel -->
+        <aside id="ai-sidebar" class="hidden w-full lg:w-96 bg-slate-950 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col shrink-0 z-15 overflow-hidden transition-all duration-300">
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-800 bg-slate-950/50">
+                <button id="tab-analyst" class="flex-1 py-3 text-center text-xs font-semibold uppercase tracking-wider text-purple-400 border-b-2 border-purple-500 bg-slate-900/40 transition-all cursor-pointer">
+                    ✨ Analyst
+                </button>
+                <button id="tab-reimagine" class="flex-1 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-all cursor-pointer">
+                    ✨ Re-imagine
+                </button>
+                <button id="tab-challenge" class="flex-1 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-all cursor-pointer">
+                    ✨ Prompt Roll
+                </button>
+            </div>
+
+            <!-- Panel Content -->
+            <div class="flex-1 overflow-y-auto p-5 space-y-6">
+                <!-- SECTION 1: ✨ AI Sketch Analyst -->
+                <div id="ai-section-analyst" class="space-y-4">
+                    <div class="bg-purple-950/20 border border-purple-900/30 rounded-xl p-4">
+                        <h4 class="font-bold text-purple-300 text-sm mb-1">Sketch Analyzer & Critique</h4>
+                        <p class="text-xs text-slate-400">Gemini reads your current drawing, comments on composition, and gives suggestions.</p>
+                    </div>
+
+                    <button id="btn-ai-analyze" class="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-purple-950/40 transition-all active:scale-98 cursor-pointer">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                        <span>✨ Analyze My Art</span>
+                    </button>
+
+                    <div id="ai-loading-analyst" class="hidden flex flex-col items-center justify-center py-8 space-y-3">
+                        <div class="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs text-slate-400 animate-pulse">Gemini is studying your artwork...</span>
+                    </div>
+
+                    <div id="ai-output-analyst" class="hidden space-y-4">
+                        <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 max-h-[30vh] overflow-y-auto">
+                            <p id="analyst-text" class="text-sm text-slate-300 leading-relaxed whitespace-pre-line"></p>
+                        </div>
+
+                        <!-- Speech Tool -->
+                        <div class="flex space-x-2">
+                            <button id="btn-ai-tts" class="flex-1 flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 px-4 rounded-xl text-sm font-medium transition-all active:scale-95 cursor-pointer">
+                                <i data-lucide="volume-2" class="w-4 h-4 text-purple-400"></i>
+                                <span id="tts-btn-label">🔊 Speak Feedback</span>
+                            </button>
+                            <button id="btn-stop-tts" class="hidden bg-rose-950/40 hover:bg-rose-900/50 border border-rose-900/50 text-rose-300 p-2.5 rounded-xl transition-all active:scale-95 cursor-pointer" title="Stop Voice">
+                                <i data-lucide="square" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: ✨ AI Re-imagine -->
+                <div id="ai-section-reimagine" class="hidden space-y-4">
+                    <div class="bg-pink-950/20 border border-pink-900/30 rounded-xl p-4">
+                        <h4 class="font-bold text-pink-300 text-sm mb-1">Turn Sketch Into Masterpiece</h4>
+                        <p class="text-xs text-slate-400">Gemini interprets your draft, refines the prompt, and Imagen generates a beautiful render.</p>
+                    </div>
+
+                    <!-- Genre select for AI styling -->
+                    <div>
+                        <label class="text-xs text-slate-400 block mb-1.5">Art Style Style</label>
+                        <select id="reimagine-style" class="w-full bg-slate-900 border border-slate-800 text-slate-200 text-sm rounded-lg p-2.5 focus:ring-pink-500 focus:border-pink-500">
+                            <option value="detailed concept art, digital illustration, dramatic lighting">Masterpiece Concept Art</option>
+                            <option value="classical oil painting, textured canvas, renaissance lighting">Classic Oil Painting</option>
+                            <option value="vibrant anime key art, detailed aesthetic, studio Ghibli vibe">Vibrant Anime Art</option>
+                            <option value="epic fantasy illustration, high detail, magic sparkles">Epic Fantasy Landscape</option>
+                            <option value="gritty cyberpunk city scene, neon reflections, ultra detail">Cyberpunk / Sci-Fi</option>
+                            <option value="delicate watercolor wash, splash paper texture, dreamy look">Dreamy Watercolor</option>
+                        </select>
+                    </div>
+
+                    <button id="btn-ai-reimagine" class="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-pink-950/40 transition-all active:scale-98 cursor-pointer">
+                        <i data-lucide="wand-2" class="w-4 h-4"></i>
+                        <span>✨ Turn into Masterpiece</span>
+                    </button>
+
+                    <div id="ai-loading-reimagine" class="hidden flex flex-col items-center justify-center py-8 space-y-3">
+                        <div class="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+                        <span class="text-xs text-slate-400 animate-pulse text-center px-4">Gemini is sketching... then generating your Masterpiece...</span>
+                    </div>
+
+                    <div id="ai-output-reimagine" class="hidden space-y-4">
+                        <div class="relative bg-slate-900 rounded-xl border border-slate-800 overflow-hidden aspect-square">
+                            <img id="reimagined-img" class="w-full h-full object-cover" src="" alt="AI generated art">
+                            <div class="absolute inset-x-0 bottom-0 bg-slate-950/80 backdrop-blur-xs p-3">
+                                <p id="reimagined-prompt" class="text-xs text-slate-300 italic line-clamp-2"></p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="btn-download-ai" class="flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                <span>Save Image</span>
+                            </button>
+                            <button id="btn-apply-canvas" class="flex items-center justify-center space-x-2 bg-pink-600 hover:bg-pink-500 text-white py-2.5 rounded-xl text-sm font-medium shadow-md shadow-pink-600/10 transition-all cursor-pointer">
+                                <i data-lucide="image" class="w-4 h-4"></i>
+                                <span>Draw on Top</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: ✨ Prompt Challenge Generator -->
+                <div id="ai-section-challenge" class="hidden space-y-4">
+                    <div class="bg-indigo-950/20 border border-indigo-900/30 rounded-xl p-4">
+                        <h4 class="font-bold text-indigo-300 text-sm mb-1">Sketch Prompt Generator</h4>
+                        <p class="text-xs text-slate-400">Generate creative daily sketch prompts powered by Gemini.</p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-1">
+                        <button class="btn-challenge-tag text-[10px] py-1 px-2 rounded-md bg-slate-900 text-slate-400 border border-slate-800 cursor-pointer text-center" data-tag="Surreal">Surreal</option>
+                        <button class="btn-challenge-tag text-[10px] py-1 px-2 rounded-md bg-slate-900 text-slate-400 border border-slate-800 cursor-pointer text-center" data-tag="Cute">Cute</option>
+                        <button class="btn-challenge-tag text-[10px] py-1 px-2 rounded-md bg-indigo-600 text-white border border-indigo-500 cursor-pointer text-center" data-tag="Sci-fi">Sci-fi</option>
+                        <button class="btn-challenge-tag text-[10px] py-1 px-2 rounded-md bg-slate-900 text-slate-400 border border-slate-800 cursor-pointer text-center" data-tag="Cozy">Cozy</option>
+                        <button class="btn-challenge-tag text-[10px] py-1 px-2 rounded-md bg-slate-900 text-slate-400 border border-slate-800 cursor-pointer text-center" data-tag="Cyberpunk">Cyberpunk</option>
+                        <button class="btn-challenge-tag text-[10px] py-1 px-2 rounded-md bg-slate-900 text-slate-400 border border-slate-800 cursor-pointer text-center" data-tag="Nature">Nature</option>
+                    </div>
+
+                    <button id="btn-ai-challenge" class="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-xl shadow-lg transition-all active:scale-98 cursor-pointer">
+                        <i data-lucide="dices" class="w-4 h-4"></i>
+                        <span>✨ Roll Drawing Challenge</span>
+                    </button>
+
+                    <div id="ai-loading-challenge" class="hidden flex flex-col items-center justify-center py-6 space-y-3">
+                        <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+
+                    <div id="ai-output-challenge" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-4 text-center space-y-3 animate-fade-in">
+                        <p id="challenge-prompt-text" class="text-sm text-slate-200 font-medium leading-relaxed italic"></p>
+                        <button id="btn-accept-challenge" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer flex items-center justify-center space-x-1 mx-auto">
+                            <span>Draw this one!</span>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer for AI panel -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950/80 text-center text-[10px] text-slate-500 flex justify-center items-center gap-1">
+                <span>Gemini API integrated</span>
+                <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- Custom Modal: Clear Confirmation -->
+    <div id="clear-confirm-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl scale-95 transition-transform duration-200" id="modal-card">
+            <div class="flex items-center space-x-3 text-rose-500 mb-4">
+                <div class="bg-rose-500/10 p-2 rounded-lg">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-100">Clear Canvas?</h3>
+            </div>
+            <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                Are you sure you want to completely erase your canvas? This action cannot be undone.
+            </p>
+            <div class="flex space-x-3">
+                <button id="btn-clear-cancel" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition-all cursor-pointer">
+                    Keep It
+                </button>
+                <button id="btn-clear-confirm" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm shadow-lg shadow-rose-600/20 active:scale-95 transition-all cursor-pointer">
+                    Clear All
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Controller Logic -->
+    <script>
+        // API Configurations
+        const apiKey = ""; // Set dynamically by environment context
+
+        // DOM Elements
+        const canvas = document.getElementById('paint-canvas');
+        const canvasContainer = document.getElementById('canvas-container');
+        const gridPattern = document.getElementById('canvas-grid-pattern');
+        const gridLines = document.getElementById('canvas-grid-lines');
+        const ctx = canvas.getContext('2d');
+
+        // Toolbar Buttons & Controls
+        const btnUndo = document.getElementById('btn-undo');
+        const btnRedo = document.getElementById('btn-redo');
+        const btnClearTrigger = document.getElementById('btn-clear-trigger');
+        const btnDownload = document.getElementById('btn-download');
+        const brushSizeSlider = document.getElementById('brush-size');
+        const brushSizeLabel = document.getElementById('brush-size-label');
+        const brushPreview = document.getElementById('brush-preview');
+        const colorPicker = document.getElementById('custom-color-picker');
+        const hexLabel = document.getElementById('hex-label');
+        const colorSwatches = document.querySelectorAll('.color-swatch');
+        const toolBrush = document.getElementById('tool-brush');
+        const toolEraser = document.getElementById('tool-eraser');
+        const transparentToggle = document.getElementById('transparent-export-toggle');
+
+        // Background Controls
+        const bgLightBtn = document.getElementById('bg-light');
+        const bgDarkBtn = document.getElementById('bg-dark');
+        const bgGridBtn = document.getElementById('bg-grid');
+        const bgDotsBtn = document.getElementById('bg-dots');
+
+        // Modal Elements
+        const clearModal = document.getElementById('clear-confirm-modal');
+        const modalCancelBtn = document.getElementById('btn-clear-cancel');
+        const modalConfirmBtn = document.getElementById('btn-clear-confirm');
+        const modalCard = document.getElementById('modal-card');
+
+        // ✨ AI Panel Elements
+        const btnToggleAI = document.getElementById('btn-toggle-ai');
+        const aiSidebar = document.getElementById('ai-sidebar');
+        const toastContainer = document.getElementById('toast-container');
+
+        // Tab triggers
+        const tabAnalyst = document.getElementById('tab-analyst');
+        const tabReimagine = document.getElementById('tab-reimagine');
+        const tabChallenge = document.getElementById('tab-challenge');
+
+        // Content panels
+        const aiSectionAnalyst = document.getElementById('ai-section-analyst');
+        const aiSectionReimagine = document.getElementById('ai-section-reimagine');
+        const aiSectionChallenge = document.getElementById('ai-section-challenge');
+
+        // Analyst Elements
+        const btnAIAnalyze = document.getElementById('btn-ai-analyze');
+        const aiLoadingAnalyst = document.getElementById('ai-loading-analyst');
+        const aiOutputAnalyst = document.getElementById('ai-output-analyst');
+        const analystText = document.getElementById('analyst-text');
+        const btnAITts = document.getElementById('btn-ai-tts');
+        const btnStopTts = document.getElementById('btn-stop-tts');
+        const ttsBtnLabel = document.getElementById('tts-btn-label');
+
+        // Reimagine Elements
+        const btnAIReimagine = document.getElementById('btn-ai-reimagine');
+        const aiLoadingReimagine = document.getElementById('ai-loading-reimagine');
+        const aiOutputReimagine = document.getElementById('ai-output-reimagine');
+        const reimaginedImg = document.getElementById('reimagined-img');
+        const reimaginedPrompt = document.getElementById('reimagined-prompt');
+        const reimagineStyle = document.getElementById('reimagine-style');
+        const btnDownloadAI = document.getElementById('btn-download-ai');
+        const btnApplyCanvas = document.getElementById('btn-apply-canvas');
+
+        // Challenge Elements
+        const btnAIChallenge = document.getElementById('btn-ai-challenge');
+        const aiLoadingChallenge = document.getElementById('ai-loading-challenge');
+        const aiOutputChallenge = document.getElementById('ai-output-challenge');
+        const challengePromptText = document.getElementById('challenge-prompt-text');
+        const btnAcceptChallenge = document.getElementById('btn-accept-challenge');
+        const tagButtons = document.querySelectorAll('.btn-challenge-tag');
+
+        // App States
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let isEraserMode = false;
+        let brushColor = '#6366f1';
+        let brushSize = 8;
+        let canvasBgStyle = 'light'; // light, dark, grid, dots
+        let lastStrokeColor = '#6366f1'; // Remember stroke color when toggling back from eraser
+        let shiftPressed = false;
+        let drawStartX = 0;
+        let drawStartY = 0;
+        let activeChallengeGenre = "Sci-fi";
+
+        // AI specific states
+        let generatedTextToSpeak = "";
+        let audioPlayer = null;
+
+        // Undo & Redo History State Stacks
+        const undoStack = [];
+        const redoStack = [];
+        const MAX_HISTORY_STEPS = 30;
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Detect high DPI display scale to ensure crisp canvas drawing
+        function getScaleFactor() {
+            return window.devicePixelRatio || 1;
+        }
+
+        // Apply grid patterns / Background adjustments to Canvas element container
+        function updateCanvasBackground() {
+            canvasContainer.classList.remove('bg-white', 'bg-slate-900', 'bg-slate-950');
+            gridPattern.style.display = 'none';
+            gridLines.style.display = 'none';
+
+            // Clear pattern overlay opacity shifts
+            gridPattern.style.opacity = '10%';
+            gridLines.style.opacity = '5%';
+
+            if (canvasBgStyle === 'light') {
+                canvasContainer.classList.add('bg-white');
+                gridPattern.style.backgroundImage = 'radial-gradient(#000000 1px, transparent 1px)';
+                gridLines.style.backgroundImage = 'linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)';
+            } else if (canvasBgStyle === 'dark') {
+                canvasContainer.classList.add('bg-slate-950');
+                gridPattern.style.backgroundImage = 'radial-gradient(#ffffff 1px, transparent 1px)';
+                gridLines.style.backgroundImage = 'linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px)';
+            } else if (canvasBgStyle === 'grid') {
+                canvasContainer.classList.add('bg-white');
+                gridLines.style.display = 'block';
+                gridLines.style.backgroundImage = 'linear-gradient(to right, #cbd5e1 1px, transparent 1px), linear-gradient(to bottom, #cbd5e1 1px, transparent 1px)';
+            } else if (canvasBgStyle === 'dots') {
+                canvasContainer.classList.add('bg-slate-900');
+                gridPattern.style.display = 'block';
+                gridPattern.style.backgroundImage = 'radial-gradient(#ffffff 1.5px, transparent 1.5px)';
+                gridPattern.style.opacity = '20%';
+            }
+        }
+
+        // Initialize / Resize canvas dynamic resolution logic (retina display fallback)
+        function initCanvasSize() {
+            const rect = canvasContainer.getBoundingClientRect();
+            const scale = getScaleFactor();
+
+            // Save state of current painting
+            let tempCanvas = null;
+            if (canvas.width > 0 && canvas.height > 0) {
+                tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(canvas, 0, 0);
+            }
+
+            // Update real sizes for Retina/HighDPI renders
+            canvas.width = rect.width * scale;
+            canvas.height = rect.height * scale;
+
+            // Normalize drawing context scale to match CSS pixel dimensions
+            ctx.scale(scale, scale);
+
+            // Restore canvas contents if resize happened
+            if (tempCanvas) {
+                ctx.save();
+                ctx.scale(1 / scale, 1 / scale);
+                ctx.drawImage(tempCanvas, 0, 0);
+                ctx.restore();
+            }
+
+            // Set drawing baseline setups
+            setupCtxDefaults();
+        }
+
+        function setupCtxDefaults() {
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = isEraserMode ? getEraserColor() : brushColor;
+            ctx.lineWidth = brushSize;
+        }
+
+        // Save Current State in Undo History
+        function saveHistoryState() {
+            if (undoStack.length >= MAX_HISTORY_STEPS) {
+                undoStack.shift();
+            }
+            // Keep snapshot of current data
+            const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            undoStack.push(snapshot);
+            // Clear future stack when writing new strokes
+            redoStack.length = 0;
+            updateUndoRedoButtons();
+        }
+
+        function updateUndoRedoButtons() {
+            btnUndo.disabled = undoStack.length === 0;
+            btnRedo.disabled = redoStack.length === 0;
+        }
+
+        // Trigger History Undo Operation
+        function performUndo() {
+            if (undoStack.length === 0) return;
+
+            // Push current visual into redo
+            const currentSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            redoStack.push(currentSnapshot);
+
+            // Retrieve previous
+            const previousState = undoStack.pop();
+            ctx.putImageData(previousState, 0, 0);
+            updateUndoRedoButtons();
+        }
+
+        // Trigger History Redo Operation
+        function performRedo() {
+            if (redoStack.length === 0) return;
+
+            // Save current into undo
+            const currentSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            undoStack.push(currentSnapshot);
+
+            // Retrieve forward state
+            const nextState = redoStack.pop();
+            ctx.putImageData(nextState, 0, 0);
+            updateUndoRedoButtons();
+        }
+
+        // Grab contextual "Eraser" background color relative to current canvas theme
+        function getEraserColor() {
+            if (canvasBgStyle === 'light' || canvasBgStyle === 'grid') return '#ffffff';
+            if (canvasBgStyle === 'dark') return '#020617'; // slate-950
+            if (canvasBgStyle === 'dots') return '#0f172a'; // slate-900
+            return '#ffffff';
+        }
+
+        // Render live preview bubble for brush styling
+        function updateBrushPreview() {
+            brushPreview.style.width = `${brushSize}px`;
+            brushPreview.style.height = `${brushSize}px`;
+            brushPreview.style.backgroundColor = isEraserMode ? '#64748b' : brushColor;
+            
+            if (isEraserMode) {
+                brushPreview.style.border = '2px dashed #94a3b8';
+            } else {
+                brushPreview.style.border = 'none';
+            }
+        }
+
+        // Setup active toolbar state triggers
+        function setToolMode(mode) {
+            isEraserMode = mode === 'eraser';
+            
+            toolBrush.className = !isEraserMode 
+                ? "flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 font-medium transition-all"
+                : "flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl border border-transparent bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-all cursor-pointer";
+
+            toolEraser.className = isEraserMode 
+                ? "flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 font-medium transition-all"
+                : "flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl border border-transparent bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-all cursor-pointer";
+
+            // If switching to eraser, hide swatches highlighting. If brush, highlight active stroke color.
+            if (isEraserMode) {
+                colorSwatches.forEach(swatch => swatch.style.borderColor = '#0f172a');
+            } else {
+                highlightActiveSwatch();
+            }
+
+            ctx.strokeStyle = isEraserMode ? getEraserColor() : brushColor;
+            updateBrushPreview();
+        }
+
+        // Draw Line Event Engine
+        function startDrawing(e) {
+            isDrawing = true;
+            
+            // Capture historical frame snapshot prior to executing the new action path
+            saveHistoryState();
+
+            const pos = getCoordinates(e);
+            lastX = pos.x;
+            lastY = pos.y;
+            drawStartX = pos.x;
+            drawStartY = pos.y;
+
+            // Handle standard click/tap scribble dot
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, brushSize / 2, 0, Math.PI * 2);
+            ctx.fillStyle = isEraserMode ? getEraserColor() : brushColor;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault(); // Lock mobile device drag-down-to-refresh and multi-touch behaviors
+
+            const pos = getCoordinates(e);
+            let currentX = pos.x;
+            let currentY = pos.y;
+
+            // Straight line assistant tool
+            if (shiftPressed) {
+                // Determine whether line path is predominantly horizontal or vertical
+                const dx = Math.abs(currentX - drawStartX);
+                const dy = Math.abs(currentY - drawStartY);
+                if (dx > dy) {
+                    currentY = drawStartY; // Restrict to straight horizontal
+                } else {
+                    currentX = drawStartX; // Restrict to straight vertical
+                }
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(currentX, currentY);
+            ctx.strokeStyle = isEraserMode ? getEraserColor() : brushColor;
+            ctx.lineWidth = brushSize;
+            ctx.stroke();
+            ctx.closePath();
+
+            lastX = currentX;
+            lastY = currentY;
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                ctx.beginPath();
+            }
+        }
+
+        // Get accurate relative positions on drawing node
+        function getCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            // Handle cross-compatibility logic between Touch Event and Mouse Event pointers
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        // Check if an input custom color is dark or light for readability
+        function highlightActiveSwatch() {
+            colorSwatches.forEach(swatch => {
+                const swatchColor = swatch.getAttribute('data-color').toLowerCase();
+                if (swatchColor === brushColor.toLowerCase() && !isEraserMode) {
+                    swatch.style.borderColor = '#6366f1'; // Indigo-500
+                    swatch.style.transform = 'scale(1.15)';
+                    swatch.style.boxShadow = '0 10px 15px -3px rgba(99, 102, 241, 0.4)';
+                } else {
+                    swatch.style.borderColor = '#0f172a'; // Reset to slate
+                    swatch.style.transform = 'scale(1.0)';
+                    swatch.style.boxShadow = 'none';
+                }
+            });
+        }
+
+        // Update selected color configuration values
+        function updateColor(colorHex) {
+            brushColor = colorHex;
+            lastStrokeColor = colorHex;
+            hexLabel.textContent = colorHex.toUpperCase();
+            colorPicker.value = colorHex;
+            
+            // Auto switch back to pen if user selects colors while eraser is active
+            if (isEraserMode) {
+                setToolMode('brush');
+            } else {
+                highlightActiveSwatch();
+                updateBrushPreview();
+            }
+
+            ctx.strokeStyle = brushColor;
+        }
+
+        // Custom Modal UI Triggers (Instead of alert/confirm)
+        function openClearModal() {
+            clearModal.classList.remove('hidden');
+            setTimeout(() => {
+                clearModal.classList.remove('opacity-0');
+                modalCard.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeClearModal() {
+            clearModal.classList.add('opacity-0');
+            modalCard.classList.add('scale-95');
+            setTimeout(() => {
+                clearModal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Action: Clean Canvas Workspace entirely
+        function clearCanvas() {
+            saveHistoryState();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            closeClearModal();
+            showToast("Canvas cleared!", "info");
+        }
+
+        // Grab current canvas flattened representation with background included for processing
+        function getFlattenedCanvasBase64() {
+            const staging = document.createElement('canvas');
+            staging.width = canvas.width;
+            staging.height = canvas.height;
+            const sCtx = staging.getContext('2d');
+            
+            // Force light colored canvas drawing background representation for Gemini visual recognition to work flawlessly
+            sCtx.fillStyle = '#ffffff';
+            sCtx.fillRect(0, 0, staging.width, staging.height);
+            sCtx.drawImage(canvas, 0, 0);
+
+            // Returns clean non-header encoded string
+            return staging.toDataURL('image/png').split(',')[1];
+        }
+
+        // Build composite output with visible elements or transparent settings
+        function generateExportImage() {
+            // Create a temp staging canvas context for drawing the output PNG file
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = canvas.width;
+            exportCanvas.height = canvas.height;
+            const exportCtx = exportCanvas.getContext('2d');
+
+            const isTransparentExport = transparentToggle.checked;
+
+            // If transparent toggle is disabled, paint background style color manually to stage
+            if (!isTransparentExport) {
+                if (canvasBgStyle === 'light' || canvasBgStyle === 'grid') {
+                    exportCtx.fillStyle = '#ffffff';
+                    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+                    
+                    // Draw grid helper lines if grid layout is active during export
+                    if (canvasBgStyle === 'grid') {
+                        exportCtx.strokeStyle = '#e2e8f0';
+                        exportCtx.lineWidth = 1;
+                        const lineSpacing = 20 * getScaleFactor();
+                        for (let x = 0; x < exportCanvas.width; x += lineSpacing) {
+                            exportCtx.beginPath();
+                            exportCtx.moveTo(x, 0);
+                            exportCtx.lineTo(x, exportCanvas.height);
+                            exportCtx.stroke();
+                        }
+                        for (let y = 0; y < exportCanvas.height; y += lineSpacing) {
+                            exportCtx.beginPath();
+                            exportCtx.moveTo(0, y);
+                            exportCtx.lineTo(exportCanvas.width, y);
+                            exportCtx.stroke();
+                        }
+                    }
+                } else if (canvasBgStyle === 'dark' || canvasBgStyle === 'dots') {
+                    exportCtx.fillStyle = canvasBgStyle === 'dark' ? '#020617' : '#0f172a';
+                    exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+                    // Draw dots configuration manually if active
+                    if (canvasBgStyle === 'dots') {
+                        exportCtx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                        const dotSpacing = 20 * getScaleFactor();
+                        const dotRadius = 1.5 * getScaleFactor();
+                        for (let x = 0; x < exportCanvas.width; x += dotSpacing) {
+                            for (let y = 0; y < exportCanvas.height; y += dotSpacing) {
+                                exportCtx.beginPath();
+                                exportCtx.arc(x, y, dotRadius, 0, Math.PI * 2);
+                                exportCtx.fill();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Draw original user scribble canvas artwork directly on top of background layer
+            exportCtx.drawImage(canvas, 0, 0);
+
+            // Execute safe user-activated download
+            const imageURI = exportCanvas.toDataURL('image/png');
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.download = `scribblepad-export-${Date.now()}.png`;
+            downloadAnchor.href = imageURI;
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            document.body.removeChild(downloadAnchor);
+            showToast("Artwork downloaded successfully!", "success");
+        }
+
+        // Change Active Preference Button Visual Toggle Styling
+        function setActiveBgOption(activeButton) {
+            const buttons = [bgLightBtn, bgDarkBtn, bgGridBtn, bgDotsBtn];
+            buttons.forEach(btn => {
+                btn.className = "canvas-bg-btn text-xs py-2 px-3 rounded-lg border border-transparent bg-slate-900 text-slate-400 hover:text-slate-200 cursor-pointer transition-all";
+            });
+            activeButton.className = "canvas-bg-btn text-xs py-2 px-3 rounded-lg border border-indigo-500 bg-indigo-500/10 text-white font-medium cursor-pointer transition-all";
+        }
+
+        // System Toast Messenger
+        function showToast(message, type = "info") {
+            const toast = document.createElement('div');
+            toast.className = `flex items-center space-x-2.5 px-4 py-3 rounded-xl shadow-lg border text-sm transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto max-w-sm`;
+            
+            let icon = "info";
+            if (type === "success") {
+                toast.classList.add("bg-emerald-950/90", "border-emerald-800/50", "text-emerald-200");
+                icon = "check-circle-2";
+            } else if (type === "error") {
+                toast.classList.add("bg-rose-950/90", "border-rose-800/50", "text-rose-200");
+                icon = "alert-circle";
+            } else {
+                toast.classList.add("bg-slate-950/90", "border-slate-800/50", "text-slate-200");
+                icon = "info";
+            }
+
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-5 h-5 shrink-0"></i>
+                <span class="font-medium">${message}</span>
+            `;
+
+            toastContainer.appendChild(toast);
+            lucide.createIcons();
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 50);
+
+            // Clean up
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-[-8px]');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3500);
+        }
+
+        // ==========================================
+        // ✨ GEMINI API & LLM INTEGRATION MECHANICS
+        // ==========================================
+
+        // Reliable Exponential Backoff HTTP Client wrapper
+        async function fetchWithRetry(url, options, retries = 5, initialDelay = 1000) {
+            let delay = initialDelay;
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                    if (response.status === 429 || response.status >= 500) {
+                        await new Promise(res => setTimeout(res, delay));
+                        delay *= 2;
+                        continue;
+                    }
+                    throw new Error(`Gemini Server Error (${response.status})`);
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        // PCM16 to WAV Array Buffer conversion utility (Crucial for playing Gemini TTS API output)
+        function pcmToWav(pcmBase64, sampleRate = 24000) {
+            const binaryString = atob(pcmBase64);
+            const len = binaryString.length;
+            const buffer = new ArrayBuffer(44 + len);
+            const view = new DataView(buffer);
+
+            // Write WAV File Headers
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + len, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // Raw PCM
+            view.setUint16(22, 1, true); // Mono channel
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true); // Byte rate
+            view.setUint16(32, 2, true); // Block align
+            view.setUint16(34, 16, true); // Bits per sample
+            writeString(view, 36, 'data');
+            view.setUint32(40, len, true);
+
+            for (let i = 0; i < len; i++) {
+                view.setUint8(44 + i, binaryString.charCodeAt(i));
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        // Feature 1: ✨ AI Sketch Analyst
+        async function runSketchAnalysis() {
+            aiLoadingAnalyst.classList.remove('hidden');
+            aiOutputAnalyst.classList.add('hidden');
+            btnAIAnalyze.disabled = true;
+
+            const base64Data = getFlattenedCanvasBase64();
+
+            const prompt = `You are a warm, witty, and deeply insightful art companion and critique. Examine this canvas sketch and do the following:
+1. Guess what it represents (even if it's a simple doodle or abstract lines, give a whimsical, highly creative interpretation!).
+2. Compliment its style, flow, or energetic expression.
+3. Suggest 3 specific, fun, and highly creative details/additions the user could sketch onto the canvas next to bring it to life. Keep your feedback encouraging, friendly, and structured.`;
+
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: prompt },
+                        {
+                            inlineData: {
+                                mimeType: "image/png",
+                                data: base64Data
+                            }
+                        }
+                    ]
+                }]
+            };
+
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            try {
+                const data = await fetchWithRetry(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (rawText) {
+                    generatedTextToSpeak = rawText;
+                    analystText.innerHTML = formatMarkdownText(rawText);
+                    aiOutputAnalyst.classList.remove('hidden');
+                    showToast("Analysis complete!", "success");
+                } else {
+                    throw new Error("Empty response received from Gemini.");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Oops! The AI Studio timed out. Please try again.", "error");
+            } finally {
+                aiLoadingAnalyst.classList.add('hidden');
+                btnAIAnalyze.disabled = false;
+            }
+        }
+
+        // Feature 2: 🔊 Speak Art Critique (TTS)
+        async function speakCritique() {
+            if (!generatedTextToSpeak) return;
+
+            // Stop currently playing audio if any
+            if (audioPlayer) {
+                audioPlayer.pause();
+                btnStopTts.classList.add('hidden');
+                ttsBtnLabel.textContent = "🔊 Speak Feedback";
+            }
+
+            ttsBtnLabel.textContent = "Generating Voice...";
+            btnAITts.disabled = true;
+
+            // Keep text lightweight for TTS call
+            const cleanText = generatedTextToSpeak.replace(/[\*#_`]/g, '').substring(0, 450);
+
+            const payload = {
+                contents: [{ parts: [{ text: `Say warmly and expressively like a happy art teacher: ${cleanText}` }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: {
+                            prebuiltVoiceConfig: { voiceName: "Puck" }
+                        }
+                    }
+                }
+            };
+
+            const endpoint = `https://genergenerativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+            try {
+                const data = await fetchWithRetry(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const audioData = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                if (audioData) {
+                    const wavBlob = pcmToWav(audioData, 24000);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    audioPlayer = new Audio(audioUrl);
+                    audioPlayer.play();
+                    
+                    ttsBtnLabel.textContent = "Playing Review...";
+                    btnStopTts.classList.remove('hidden');
+
+                    audioPlayer.onended = () => {
+                        ttsBtnLabel.textContent = "🔊 Speak Feedback";
+                        btnStopTts.classList.add('hidden');
+                    };
+                } else {
+                    throw new Error("Could not retrieve voice stream.");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Voice feedback generation failed.", "error");
+                ttsBtnLabel.textContent = "🔊 Speak Feedback";
+            } finally {
+                btnAITts.disabled = false;
+            }
+        }
+
+        // Stop Voice Playback
+        function stopVoicePlayback() {
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+            }
+            btnStopTts.classList.add('hidden');
+            ttsBtnLabel.textContent = "🔊 Speak Feedback";
+        }
+
+        // Feature 3: ✨ AI Re-imagine (Generates full masterwork from sketch)
+        async function runReimagine() {
+            aiLoadingReimagine.classList.remove('hidden');
+            aiOutputReimagine.classList.add('hidden');
+            btnAIReimagine.disabled = true;
+
+            const base64Data = getFlattenedCanvasBase64();
+            const selectedStyle = reimagineStyle.value;
+
+            // Stage 1: Tell Gemini 2.5 to read the canvas and formulate an highly descriptive art prompt
+            const promptSpec = `Read this drawing scribble. Describe exactly what it represents, then formulate a single, highly-detailed, beautiful production-ready prompt for a text-to-image generator. 
+The image generator prompt must turn this sketch into a masterpiece. Use the style constraint: "${selectedStyle}".
+Output ONLY the final image generation prompt inside square brackets, e.g. [A gorgeous cyberpunk dragon wrapping around a neon skyscraper...]. Do not write any introduction or conversation.`;
+
+            const specPayload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: promptSpec },
+                        {
+                            inlineData: {
+                                mimeType: "image/png",
+                                data: base64Data
+                            }
+                        }
+                    ]
+                }]
+            };
+
+            const specEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            try {
+                const specData = await fetchWithRetry(specEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(specPayload)
+                });
+
+                const analysisOutput = specData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                // Extract whatever is inside bracket or fall back to full response
+                const bracketMatch = analysisOutput.match(/\[(.*?)\]/);
+                const generatedPrompt = bracketMatch ? bracketMatch[1] : analysisOutput;
+
+                if (!generatedPrompt) {
+                    throw new Error("Unable to construct creative prompt description.");
+                }
+
+                // Stage 2: Call Imagen-4 to generate the stunning digital masterpiece
+                const imagenEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+                const imagenPayload = {
+                    instances: { prompt: generatedPrompt },
+                    parameters: { sampleCount: 1 }
+                };
+
+                const imageResponse = await fetchWithRetry(imagenEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(imagenPayload)
+                });
+
+                const resultBytes = imageResponse.predictions?.[0]?.bytesBase64Encoded;
+                if (resultBytes) {
+                    const fullDataUrl = `data:image/png;base64,${resultBytes}`;
+                    reimaginedImg.src = fullDataUrl;
+                    reimaginedPrompt.textContent = generatedPrompt;
+                    aiOutputReimagine.classList.remove('hidden');
+                    showToast("Your masterpiece is ready!", "success");
+                } else {
+                    throw new Error("No image data returned from image generator.");
+                }
+
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to re-imagine sketch. Make sure your drawing has some content!", "error");
+            } finally {
+                aiLoadingReimagine.classList.add('hidden');
+                btnAIReimagine.disabled = false;
+            }
+        }
+
+        // Apply generated AI Masterpiece onto canvas background as reference
+        function applyAiAsBackground() {
+            if (!reimaginedImg.src) return;
+            
+            saveHistoryState();
+            
+            const imageRef = new Image();
+            imageRef.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw reference cleanly centered keeping proportion
+                const scale = Math.min(canvas.width / getScaleFactor() / imageRef.width, canvas.height / getScaleFactor() / imageRef.height);
+                const x = (canvas.width / getScaleFactor() - imageRef.width * scale) / 2;
+                const y = (canvas.height / getScaleFactor() - imageRef.height * scale) / 2;
+                
+                ctx.globalAlpha = 0.55; // Set partially transparent to doodle on top easily!
+                ctx.drawImage(imageRef, x, y, imageRef.width * scale, imageRef.height * scale);
+                ctx.globalAlpha = 1.0; // Restore alpha
+                
+                showToast("Masterpiece loaded as reference layer!", "success");
+            };
+            imageRef.src = reimaginedImg.src;
+        }
+
+        // Feature 4: ✨ Daily Sketch Prompt Roller
+        async function runRollChallenge() {
+            aiLoadingChallenge.classList.remove('hidden');
+            aiOutputChallenge.classList.add('hidden');
+            btnAIChallenge.disabled = true;
+
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const prompt = `Generate a single short, extremely imaginative drawing prompt. Style category is "${activeChallengeGenre}". Give a concrete subject with a playful action or atmosphere. Do not write an intro, just return the prompt itself, under 18 words.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }]
+            };
+
+            try {
+                const data = await fetchWithRetry(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const promptText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (promptText) {
+                    challengePromptText.textContent = promptText.trim().replace(/^"|"$/g, '');
+                    aiOutputChallenge.classList.remove('hidden');
+                    showToast("New drawing challenge loaded!", "info");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Could not roll challenge prompt.", "error");
+            } finally {
+                aiLoadingChallenge.classList.add('hidden');
+                btnAIChallenge.disabled = false;
+            }
+        }
+
+        // Accept drawing prompt, pre-write prompt title on canvas top corner
+        function acceptChallengeAndWrite() {
+            const txt = challengePromptText.textContent;
+            if (!txt) return;
+
+            saveHistoryState();
+            ctx.font = '13px sans-serif';
+            ctx.fillStyle = canvasBgStyle === 'light' || canvasBgStyle === 'grid' ? '#475569' : '#94a3b8';
+            ctx.fillText(`Prompt challenge: ${txt}`, 20, 30);
+            showToast("Challenge stamp added! Start drawing!", "success");
+        }
+
+        // Simple formatting helper for clean AI panel text output
+        function formatMarkdownText(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<b class="text-white font-bold">$1</b>')
+                .replace(/\*(.*?)\*/g, '<i class="italic text-slate-300">$1</i>')
+                .replace(/^[0-9]\.\s(.*)$/gm, '<li class="ml-4 list-decimal text-slate-300">$1</li>');
+        }
+
+        // Switch panel tabs
+        function switchAITab(activeTab) {
+            const tabs = [tabAnalyst, tabReimagine, tabChallenge];
+            tabs.forEach(tab => {
+                tab.className = "flex-1 py-3 text-center text-xs font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-200 border-b-2 border-transparent transition-all cursor-pointer";
+            });
+
+            aiSectionAnalyst.classList.add('hidden');
+            aiSectionReimagine.classList.add('hidden');
+            aiSectionChallenge.classList.add('hidden');
+
+            if (activeTab === 'analyst') {
+                tabAnalyst.className = "flex-1 py-3 text-center text-xs font-semibold uppercase tracking-wider text-purple-400 border-b-2 border-purple-500 bg-slate-900/40 transition-all cursor-pointer";
+                aiSectionAnalyst.classList.remove('hidden');
+            } else if (activeTab === 'reimagine') {
+                tabReimagine.className = "flex-1 py-3 text-center text-xs font-semibold uppercase tracking-wider text-pink-400 border-b-2 border-pink-500 bg-slate-900/40 transition-all cursor-pointer";
+                aiSectionReimagine.classList.remove('hidden');
+            } else if (activeTab === 'challenge') {
+                tabChallenge.className = "flex-1 py-3 text-center text-xs font-semibold uppercase tracking-wider text-indigo-400 border-b-2 border-indigo-500 bg-slate-900/40 transition-all cursor-pointer";
+                aiSectionChallenge.classList.remove('hidden');
+            }
+        }
+
+        // Setup Keyboard Shortcut Event Hooks (Undo/Redo mechanics)
+        window.addEventListener('keydown', (e) => {
+            // Watch for Shift modifier for straight lines
+            if (e.key === 'Shift') {
+                shiftPressed = true;
+            }
+
+            // Watch for Command/Ctrl shortcuts
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key.toLowerCase() === 'z') {
+                    e.preventDefault();
+                    performUndo();
+                } else if (e.key.toLowerCase() === 'y') {
+                    e.preventDefault();
+                    performRedo();
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'Shift') {
+                shiftPressed = false;
+            }
+        });
+
+        // Initialize Canvas Handlers & Device Target Bindings
+        window.addEventListener('load', () => {
+            initCanvasSize();
+            updateCanvasBackground();
+            highlightActiveSwatch();
+            updateBrushPreview();
+            updateUndoRedoButtons();
+            
+            // Welcome notification
+            showToast("Welcome to ScribblePad ✨! Try out the new AI Studio.", "success");
+        });
+
+        // Smart re-render dynamic adaptation on window resize events
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            // Throttle resize triggers to keep UI fluid
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                initCanvasSize();
+            }, 100);
+        });
+
+        // Pointer event mappings for cross-device drawing functionality (Touch + Desktop Click)
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+
+        canvas.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent("mousedown", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const mouseEvent = new MouseEvent("mousemove", {
+                clientX: touch.clientX,
+                clientY: touch.clientY
+            });
+            canvas.dispatchEvent(mouseEvent);
+        }, { passive: false });
+
+        window.addEventListener('touchend', stopDrawing);
+
+        // Brush Settings Controls Events
+        brushSizeSlider.addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            brushSizeLabel.textContent = `${brushSize}px`;
+            ctx.lineWidth = brushSize;
+            updateBrushPreview();
+        });
+
+        // Preset Stroke Color Selection Click Events
+        colorSwatches.forEach(swatch => {
+            swatch.addEventListener('click', () => {
+                const colorHex = swatch.getAttribute('data-color');
+                updateColor(colorHex);
+            });
+        });
+
+        // Spectrum Palette Change Event
+        colorPicker.addEventListener('input', (e) => {
+            updateColor(e.target.value);
+        });
+
+        // Tool Trigger Toggle Bindings
+        toolBrush.addEventListener('click', () => setToolMode('brush'));
+        toolEraser.addEventListener('click', () => setToolMode('eraser'));
+
+        // History Navigation UI Triggers
+        btnUndo.addEventListener('click', performUndo);
+        btnRedo.addEventListener('click', performRedo);
+
+        // Clear Trigger Modal Flow
+        btnClearTrigger.addEventListener('click', openClearModal);
+        modalCancelBtn.addEventListener('click', closeClearModal);
+        modalConfirmBtn.addEventListener('click', clearCanvas);
+
+        // Download Action Event trigger
+        btnDownload.addEventListener('click', generateExportImage);
+
+        // Preference Settings Background Switches
+        bgLightBtn.addEventListener('click', () => {
+            canvasBgStyle = 'light';
+            setActiveBgOption(bgLightBtn);
+            updateCanvasBackground();
+            // Match eraser context style internally if toggled
+            if (isEraserMode) ctx.strokeStyle = getEraserColor();
+        });
+
+        bgDarkBtn.addEventListener('click', () => {
+            canvasBgStyle = 'dark';
+            setActiveBgOption(bgDarkBtn);
+            updateCanvasBackground();
+            if (isEraserMode) ctx.strokeStyle = getEraserColor();
+        });
+
+        bgGridBtn.addEventListener('click', () => {
+            canvasBgStyle = 'grid';
+            setActiveBgOption(bgGridBtn);
+            updateCanvasBackground();
+            if (isEraserMode) ctx.strokeStyle = getEraserColor();
+        });
+
+        bgDotsBtn.addEventListener('click', () => {
+            canvasBgStyle = 'dots';
+            setActiveBgOption(bgDotsBtn);
+            updateCanvasBackground();
+            if (isEraserMode) ctx.strokeStyle = getEraserColor();
+        });
+
+        // Dismiss modal upon backdrop clicked directly
+        clearModal.addEventListener('click', (e) => {
+            if (e.target === clearModal) {
+                closeClearModal();
+            }
+        });
+
+        // Toggle Right AI Studio Sidebar
+        btnToggleAI.addEventListener('click', () => {
+            aiSidebar.classList.toggle('hidden');
+            aiSidebar.classList.toggle('flex');
+            // Re-evaluate Canvas dimensions after sidebar shifting layouts
+            setTimeout(() => {
+                initCanvasSize();
+            }, 300);
+        });
+
+        // AI Tab switches
+        tabAnalyst.addEventListener('click', () => switchAITab('analyst'));
+        tabReimagine.addEventListener('click', () => switchAITab('reimagine'));
+        tabChallenge.addEventListener('click', () => switchAITab('challenge'));
+
+        // AI Feature click triggers
+        btnAIAnalyze.addEventListener('click', runSketchAnalysis);
+        btnAITts.addEventListener('click', speakCritique);
+        btnStopTts.addEventListener('click', stopVoicePlayback);
+        btnAIReimagine.addEventListener('click', runReimagine);
+        btnApplyCanvas.addEventListener('click', applyAiAsBackground);
+        btnAIChallenge.addEventListener('click', runRollChallenge);
+        btnAcceptChallenge.addEventListener('click', acceptChallengeAndWrite);
+
+        // Download generated masterpiece reference locally
+        btnDownloadAI.addEventListener('click', () => {
+            if (!reimaginedImg.src) return;
+            const a = document.createElement('a');
+            a.download = `reimagined-masterpiece-${Date.now()}.png`;
+            a.href = reimaginedImg.src;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        // Challenge tag selector toggles
+        tagButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tagButtons.forEach(b => {
+                    b.className = "btn-challenge-tag text-[10px] py-1 px-2 rounded-md bg-slate-900 text-slate-400 border border-slate-800 cursor-pointer text-center";
+                });
+                btn.className = "btn-challenge-tag text-[10px] py-1 px-2 rounded-md bg-indigo-600 text-white border border-indigo-500 cursor-pointer text-center";
+                activeChallengeGenre = btn.getAttribute('data-tag');
+            });
+        });
+
+    </script>
+</body>
+</html>
