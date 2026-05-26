@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confetti Celebration Machine</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- canvas-confetti CDN (Upgraded to v1.9.3 to support shapeFromText natively) -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* Premium focus rings and custom transition effects */
+    .celebrate-btn {
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
+    }
+    .celebrate-btn:active {
+      transform: scale(0.95);
+    }
+    /* Smooth transition for cheer text */
+    .fade-pop {
+      animation: fadePop 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes fadePop {
+      0% { opacity: 0; transform: scale(0.5) translateY(20px); }
+      15% { opacity: 1; transform: scale(1.1) translateY(0); }
+      30% { transform: scale(1); }
+      80% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-30px); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between selection:bg-indigo-200 transition-colors duration-300">
+
+  <!-- Main Container -->
+  <main class="flex-1 flex flex-col items-center justify-center p-6 max-w-lg mx-auto w-full">
+    
+    <!-- Top Decorative Header -->
+    <header class="text-center mb-8">
+      <div class="inline-flex items-center justify-center p-3 bg-indigo-100 text-indigo-600 rounded-2xl mb-3">
+        <i data-lucide="sparkles" class="w-8 h-8 animate-pulse"></i>
+      </div>
+      <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+        Celebration Station
+      </h1>
+      <p class="text-slate-500 mt-2 text-sm sm:text-base">
+        Need a boost of joy? Press the button for instant confetti!
+      </p>
+    </header>
+
+    <!-- Interactive Card Area -->
+    <section class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6 w-full flex flex-col items-center relative overflow-hidden">
+      
+      <!-- Live Stats & Screen Reader Announcements -->
+      <div class="flex items-center justify-between w-full mb-6 border-b border-slate-100 pb-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="trophy" class="w-5 h-5 text-amber-500"></i>
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Celebrations</span>
+        </div>
+        <span id="counter" class="text-2xl font-black text-indigo-600 tabular-nums">0</span>
+      </div>
+
+      <!-- Live Notification Region for Screen Readers -->
+      <div id="sr-announcer" class="sr-only" aria-live="polite"></div>
+
+      <!-- Animated Floating Cheer Phrase Target -->
+      <div class="h-16 flex items-center justify-center relative w-full mb-4">
+        <div id="cheer-container" class="absolute font-bold text-xl sm:text-2xl text-center text-indigo-600 pointer-events-none"></div>
+      </div>
+
+      <!-- Main Interactive Celebration Button -->
+      <button 
+        id="celebrate-btn"
+        type="button"
+        aria-label="Launch Confetti!"
+        class="celebrate-btn w-48 h-48 sm:w-56 sm:h-56 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 text-white shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 focus:outline-none focus:ring-4 focus:ring-indigo-300 focus:ring-offset-2 flex flex-col items-center justify-center gap-2 group cursor-pointer"
+      >
+        <span class="relative flex h-16 w-16 items-center justify-center">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-25 group-hover:opacity-40 transition-opacity"></span>
+          <i data-lucide="party-popper" class="w-12 h-12 relative text-white group-hover:rotate-12 transition-transform duration-200"></i>
+        </span>
+        <span class="font-bold text-lg tracking-wide uppercase mt-2">CELEBRATE!</span>
+        <span class="text-xs text-indigo-100 opacity-90 font-medium">Click, Tap, or Press Space</span>
+      </button>
+
+      <!-- Customization Controls Panel -->
+      <div class="w-full mt-8 border-t border-slate-100 pt-6">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2">
+          <i data-lucide="sliders" class="w-4 h-4 text-indigo-500"></i>
+          Confetti Settings
+        </h2>
+        
+        <!-- Interactive Style Picker -->
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <button 
+            type="button"
+            id="style-classic"
+            class="style-toggle-btn p-2.5 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2 border-indigo-500 bg-indigo-50/50 text-indigo-700"
+            data-style="classic"
+          >
+            🎨 Classic Colors
+          </button>
+          <button 
+            type="button"
+            id="style-emoji"
+            class="style-toggle-btn p-2.5 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            data-style="emoji"
+          >
+            🎉 Fun Emojis
+          </button>
+          <button 
+            type="button"
+            id="style-star"
+            class="style-toggle-btn p-2.5 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            data-style="star"
+          >
+            ⭐ Shiny Stars
+          </button>
+          <button 
+            type="button"
+            id="style-heart"
+            class="style-toggle-btn p-2.5 rounded-xl border text-sm font-medium transition-all flex items-center justify-center gap-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            data-style="heart"
+          >
+            ❤️ Sweet Hearts
+          </button>
+        </div>
+
+        <!-- Toggle Controls (Sound & Motion Settings) -->
+        <div class="flex flex-wrap items-center justify-between gap-4 mt-4 text-sm font-medium text-slate-600">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              id="sound-toggle" 
+              checked 
+              class="w-4.5 h-4.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+            >
+            <span class="flex items-center gap-1.5">
+              <i data-lucide="volume-2" class="w-4 h-4 text-slate-500"></i> Sound FX
+            </span>
+          </label>
+          
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              id="motion-override" 
+              class="w-4.5 h-4.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+            >
+            <span class="flex items-center gap-1.5">
+              <i data-lucide="eye" class="w-4 h-4 text-slate-500"></i> Reduced Motion
+            </span>
+          </label>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Reset Stats Action -->
+    <button 
+      type="button"
+      id="reset-btn"
+      class="mt-4 text-xs font-semibold text-slate-400 hover:text-indigo-600 focus:text-indigo-600 focus:outline-none flex items-center gap-1 transition-colors"
+      aria-label="Reset celebration count"
+    >
+      <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+      Reset counter
+    </button>
+  </main>
+
+  <!-- Accessibility Motion Advisory Bar (Only shows if system prefers reduced motion) -->
+  <div 
+    id="motion-warning" 
+    class="hidden bg-amber-50 border-t border-amber-200 p-3 text-center text-xs text-amber-800 font-medium"
+    role="alert"
+  >
+    💡 We detected your system prefers reduced motion. You can toggle full animations on in the Settings panel below if you wish!
+  </div>
+
+  <footer class="text-center p-4 text-xs text-slate-400">
+    <p>Handcrafted for celebrations of all sizes. Purely local & secure.</p>
+  </footer>
+
+  <script>
+    // ==========================================
+    // TEACHER-EDITABLE CONFIGURATION BLOCK
+    // Feel free to modify the lists, values, and settings below!
+    // ==========================================
+    const CONFIG = {
+      // Cheer messages popped randomly when the button is hit
+      cheerPhrases: [
+        "Hooray! 🥳",
+        "Spectacular Work! 🌟",
+        "Unstoppable! 🚀",
+        "Brilliant! 💡",
+        "Success! 🎉",
+        "Amazing! ✨",
+        "Nailed It! 🎯",
+        "Fantastic! 🏆"
+      ],
+
+      // Custom Color Palettes (Used by classic & star modes)
+      colors: {
+        classic: ['#4f46e5', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'],
+        stars: ['#f59e0b', '#3b82f6', '#ef4444', '#10b981', '#ec4899'],
+        hearts: ['#ff3366', '#ff66b2', '#ff99cc', '#ff1a1a', '#e6005c']
+      },
+
+      // Emojis for "Fun Emojis" mode
+      emojis: ['🎉', '✨', '🥳', '🎈', '❤️', '🦄', '🍿', '🧁', '⭐', '🌈'],
+
+      // Sound synthesizer frequency configurations
+      soundSettings: {
+        launchFrequency: 150, // Base frequency for party popper sound
+        popFrequency: 300,    // High sweet-spot frequency 
+      }
+    };
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // App State Management
+    let celebrationCount = 0;
+    let selectedStyle = 'classic';
+    let soundEnabled = true;
+    let systemReducedMotion = false;
+
+    // Load Counter from LocalStorage (if exists)
+    try {
+      const savedCount = localStorage.getItem('celebration_count');
+      if (savedCount !== null) {
+        celebrationCount = parseInt(savedCount, 10) || 0;
+        document.getElementById('counter').textContent = celebrationCount;
+      }
+    } catch (e) {
+      console.warn('LocalStorage not available, utilizing session memory.', e);
+    }
+
+    // Reference DOM Nodes
+    const celebrateBtn = document.getElementById('celebrate-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const counterEl = document.getElementById('counter');
+    const srAnnouncer = document.getElementById('sr-announcer');
+    const cheerContainer = document.getElementById('cheer-container');
+    const styleBtns = document.querySelectorAll('.style-toggle-btn');
+    const soundToggle = document.getElementById('sound-toggle');
+    const motionOverride = document.getElementById('motion-override');
+    const motionWarning = document.getElementById('motion-warning');
+
+    // Web Audio Synthesizer (Zero asset dependencies!)
+    function playCelebrationSound() {
+      if (!soundEnabled) return;
+
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // 1. Synthesize Popper Burst sound
+      const popperOsc = audioCtx.createOscillator();
+      const popperGain = audioCtx.createGain();
+      
+      popperOsc.type = 'triangle';
+      popperOsc.frequency.setValueAtTime(CONFIG.soundSettings.launchFrequency, audioCtx.currentTime);
+      popperOsc.frequency.exponentialRampToValueAtTime(1, audioCtx.currentTime + 0.15);
+      
+      popperGain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      popperGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      
+      popperOsc.connect(popperGain);
+      popperGain.connect(audioCtx.destination);
+      
+      // Start/Stop
+      popperOsc.start();
+      popperOsc.stop(audioCtx.currentTime + 0.15);
+
+      // 2. Synthesize Sparkle/Chime pop after a fraction of a second
+      setTimeout(() => {
+        const chimeOsc = audioCtx.createOscillator();
+        const chimeGain = audioCtx.createGain();
+        
+        chimeOsc.type = 'sine';
+        chimeOsc.frequency.setValueAtTime(CONFIG.soundSettings.popFrequency, audioCtx.currentTime);
+        chimeOsc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.3);
+        
+        chimeGain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        chimeGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        
+        chimeOsc.connect(chimeGain);
+        chimeGain.connect(audioCtx.destination);
+        
+        chimeOsc.start();
+        chimeOsc.stop(audioCtx.currentTime + 0.3);
+      }, 50);
+    }
+
+    // Launch Confetti Logic
+    function launchConfetti() {
+      // Check for motion preference
+      const isMotionReduced = motionOverride.checked;
+
+      // Handle custom settings depending on active state style
+      let options = {
+        particleCount: isMotionReduced ? 15 : 120,
+        spread: isMotionReduced ? 20 : 80,
+        origin: { y: 0.6 }
+      };
+
+      try {
+        if (selectedStyle === 'classic') {
+          options.colors = CONFIG.colors.classic;
+        } else if (selectedStyle === 'emoji' && typeof confetti.shapeFromText === 'function') {
+          // Map configured emojis to canvas-confetti shape parameters
+          options.scalar = 2.5;
+          options.shapes = CONFIG.emojis.map(emoji => confetti.shapeFromText({ text: emoji }));
+        } else if (selectedStyle === 'star') {
+          options.colors = CONFIG.colors.stars;
+          options.shapes = ['star'];
+          options.scalar = 1.2;
+        } else if (selectedStyle === 'heart' && typeof confetti.shapeFromText === 'function') {
+          options.colors = CONFIG.colors.hearts;
+          options.shapes = [
+            confetti.shapeFromText({ text: '❤️' }),
+            confetti.shapeFromText({ text: '💖' }),
+            confetti.shapeFromText({ text: '💝' })
+          ];
+          options.scalar = 2;
+        } else {
+          // Fallback style if custom shape features are unavailable or unsupported
+          options.colors = CONFIG.colors.classic;
+        }
+      } catch (err) {
+        console.warn("Shape generation not supported or failed, falling back to classic styles.", err);
+        options.colors = CONFIG.colors.classic;
+        options.shapes = ['square', 'circle'];
+      }
+
+      // Fire primary blast
+      confetti(options);
+
+      // Fire matching smaller bursts on sides for full immersion if motion allowed
+      if (!isMotionReduced) {
+        setTimeout(() => {
+          confetti(Object.assign({}, options, {
+            particleCount: 30,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 }
+          }));
+        }, 80);
+        setTimeout(() => {
+          confetti(Object.assign({}, options, {
+            particleCount: 30,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 }
+          }));
+        }, 100);
+      }
+    }
+
+    // Dynamic floating cheer element
+    function triggerCheerText() {
+      // Clear previous
+      cheerContainer.innerHTML = '';
+      
+      // Pull random phrase from configuration
+      const randomPhrase = CONFIG.cheerPhrases[Math.floor(Math.random() * CONFIG.cheerPhrases.length)];
+      
+      const span = document.createElement('span');
+      span.className = 'fade-pop block drop-shadow-sm font-black text-2xl sm:text-3xl tracking-wide';
+      span.textContent = randomPhrase;
+      
+      cheerContainer.appendChild(span);
+    }
+
+    // Perform primary celebration action
+    function handleCelebration() {
+      // Increment state
+      celebrationCount++;
+      counterEl.textContent = celebrationCount;
+      
+      // Save state
+      try {
+        localStorage.setItem('celebration_count', celebrationCount);
+      } catch (e) {}
+
+      // Trigger multi-sensory responses
+      playCelebrationSound();
+      launchConfetti();
+      triggerCheerText();
+
+      // Update Screen Reader context
+      srAnnouncer.textContent = `Celebration triggered! Current celebration count is ${celebrationCount}.`;
+    }
+
+    // Setup style picker action
+    styleBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // Reset old selections
+        styleBtns.forEach(b => {
+          b.classList.remove('border-indigo-500', 'bg-indigo-50/50', 'text-indigo-700');
+          b.classList.add('border-slate-200', 'bg-white', 'text-slate-700');
+        });
+
+        // Set new active classes
+        const style = btn.getAttribute('data-style');
+        selectedStyle = style;
+        
+        btn.classList.add('border-indigo-500', 'bg-indigo-50/50', 'text-indigo-700');
+        btn.classList.remove('border-slate-200', 'bg-white', 'text-slate-700');
+
+        srAnnouncer.textContent = `Confetti style changed to ${style}.`;
+      });
+    });
+
+    // Event Listeners
+    celebrateBtn.addEventListener('click', handleCelebration);
+    
+    // Quick Reset
+    resetBtn.addEventListener('click', () => {
+      celebrationCount = 0;
+      counterEl.textContent = '0';
+      try {
+        localStorage.removeItem('celebration_count');
+      } catch (e) {}
+      srAnnouncer.textContent = "Celebration counter reset to zero.";
+    });
+
+    // Sound toggle listener
+    soundToggle.addEventListener('change', (e) => {
+      soundEnabled = e.target.checked;
+    });
+
+    // Check system preference for reduced motion
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function handleMotionPreference(mediaQuery) {
+      if (mediaQuery.matches) {
+        motionOverride.checked = true;
+        motionWarning.classList.remove('hidden');
+      } else {
+        motionOverride.checked = false;
+        motionWarning.classList.add('hidden');
+      }
+    }
+    handleMotionPreference(motionQuery);
+    motionQuery.addEventListener('change', handleMotionPreference);
+
+  </script>
+</body>
+</html>
