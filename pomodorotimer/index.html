@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZenFlow - Elegant Focus & Meditation Sanctuary</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts (Plus Jakarta Sans & JetBrains Mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Smooth transition for circular progress */
+    .progress-ring__circle {
+      transition: stroke-dashoffset 0.1s linear;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+    }
+    /* Dynamic pulsing animations for breathing guide */
+    @keyframes breathe-pulse {
+      0%, 100% { transform: scale(0.85); box-shadow: 0 0 40px rgba(99, 102, 241, 0.2); }
+      40% { transform: scale(1.15); box-shadow: 0 0 80px rgba(99, 102, 241, 0.6); }
+      70% { transform: scale(1.15); box-shadow: 0 0 80px rgba(99, 102, 241, 0.6); }
+    }
+    .breathing-orb-anim {
+      transition: all 4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Hide scrollbar but keep functionality */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-rose-500/30 selection:text-rose-200">
+
+  <!-- Main Container -->
+  <div class="max-w-4xl w-full mx-auto px-4 py-6 flex-1 flex flex-col justify-center gap-6">
+    
+    <!-- Top Bar / Navigation -->
+    <header class="flex flex-col sm:flex-row justify-between items-center w-full gap-4 mb-2">
+      <div class="flex items-center gap-2">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-rose-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i data-lucide="compass" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">ZenFlow</h1>
+          <p class="text-[10px] text-indigo-400/80 tracking-widest uppercase font-semibold">Mind Sanctuary</p>
+        </div>
+      </div>
+
+      <!-- Mode Selector (Timer vs Meditate) -->
+      <div class="flex p-1 bg-slate-900/60 border border-slate-800 rounded-xl w-full sm:w-auto">
+        <button id="tab-focus" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-white transition-all">
+          <i data-lucide="timer" class="w-4 h-4"></i>
+          Focus Space
+        </button>
+        <button id="tab-meditate" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition-all">
+          <i data-lucide="wind" class="w-4 h-4"></i>
+          Zen Meditation
+        </button>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <button id="stats-btn" class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/80 hover:bg-slate-800/60 hover:border-slate-700/80 transition-all text-slate-400 hover:text-white" title="View Progress">
+          <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+        </button>
+        <button id="settings-btn" class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/80 hover:bg-slate-800/60 hover:border-slate-700/80 transition-all text-slate-400 hover:text-white" title="Settings">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- TAB 1: FOCUS SPACE VIEW -->
+    <div id="view-focus" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- Left Column: The Timer Visualizer -->
+      <main class="lg:col-span-7 flex flex-col items-center justify-center bg-slate-900/30 backdrop-blur-xl border border-slate-900 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+        <!-- Glow accents behind timer -->
+        <div id="glow-effect" class="absolute -top-12 -left-12 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl transition-all duration-700 pointer-events-none"></div>
+        <div class="absolute -bottom-12 -right-12 w-48 h-48 bg-emerald-500/0 rounded-full blur-3xl transition-all duration-700 pointer-events-none"></div>
+
+        <!-- Mode Selectors -->
+        <div class="flex p-1 bg-slate-950/80 rounded-2xl border border-slate-800/80 w-full max-w-sm mb-8 z-10 relative">
+          <button id="mode-pomodoro" class="flex-1 py-2 px-3 text-sm font-semibold rounded-xl transition-all duration-300 bg-rose-500 text-white shadow-lg shadow-rose-500/10">
+            Focus
+          </button>
+          <button id="mode-short" class="flex-1 py-2 px-3 text-sm font-semibold rounded-xl text-slate-400 hover:text-slate-200 transition-all duration-300">
+            Short Break
+          </button>
+          <button id="mode-long" class="flex-1 py-2 px-3 text-sm font-semibold rounded-xl text-slate-400 hover:text-slate-200 transition-all duration-300">
+            Long Break
+          </button>
+        </div>
+
+        <!-- Timer Circle Visualization -->
+        <div class="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center z-10">
+          <svg class="w-full h-full transform -rotate-90">
+            <!-- Background Ring -->
+            <circle cx="50%" cy="50%" r="45%" stroke="rgba(30, 41, 59, 0.6)" stroke-width="8" fill="transparent" />
+            <!-- Active Dynamic Progress Ring -->
+            <circle id="progress-circle" cx="50%" cy="50%" r="45%" stroke="url(#timerGradient)" stroke-width="8" fill="transparent" stroke-dasharray="800" stroke-dashoffset="0" stroke-linecap="round" class="progress-ring__circle" />
+            
+            <!-- Definitions for colorful gradients -->
+            <defs>
+              <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop id="grad-stop-1" offset="0%" stop-color="#f43f5e" />
+                <stop id="grad-stop-2" offset="100%" stop-color="#fb923c" />
+              </linearGradient>
+            </defs>
+          </svg>
+
+          <!-- Inside Circle: Digital Clock & Task Context -->
+          <div class="absolute flex flex-col items-center justify-center text-center">
+            <span id="active-task-label" class="text-xs font-semibold text-slate-400 tracking-wider uppercase mb-1 max-w-[180px] truncate">Focus Session</span>
+            <div id="timer-display" class="text-5xl sm:text-6xl font-bold mono tracking-tighter text-white tabular-nums drop-shadow-md">
+              25:00
+            </div>
+            <span id="timer-state-label" class="text-[10px] tracking-widest uppercase font-bold text-rose-400/90 mt-2 bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/20">Ready</span>
+          </div>
+        </div>
+
+        <!-- Primary Actions -->
+        <div class="flex items-center justify-center gap-4 mt-8 w-full z-10">
+          <button id="reset-btn" class="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition-all hover:scale-105 active:scale-95" title="Reset Timer">
+            <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+          </button>
+          
+          <button id="play-pause-btn" class="px-8 py-4 rounded-2xl bg-gradient-to-tr from-rose-500 to-orange-400 hover:from-rose-600 hover:to-orange-500 text-white font-bold flex items-center gap-3 shadow-lg shadow-rose-500/25 transition-all hover:scale-105 active:scale-95 duration-150 min-w-[140px] justify-center">
+            <i data-lucide="play" id="play-icon" class="w-5 h-5 fill-current"></i>
+            <span id="play-text">Start</span>
+          </button>
+
+          <button id="skip-btn" class="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition-all hover:scale-105 active:scale-95" title="Skip Session">
+            <i data-lucide="skip-forward" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </main>
+
+      <!-- Right Column: Interactive Tasks & Daily Goal -->
+      <section class="lg:col-span-5 flex flex-col gap-6">
+        
+        <!-- Task Manager Card -->
+        <div class="bg-slate-900/30 backdrop-blur-xl border border-slate-900 rounded-3xl p-6 flex flex-col gap-4">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <i data-lucide="check-square" class="w-5 h-5 text-rose-400"></i>
+              <h2 class="font-bold text-lg text-slate-100">Tasks</h2>
+            </div>
+            <span id="task-count" class="text-xs bg-slate-850 border border-slate-800 text-slate-400 px-2 py-1 rounded-lg">0 active</span>
+          </div>
+
+          <!-- Quick Add Task Form -->
+          <form id="todo-form" class="flex gap-2">
+            <input type="text" id="todo-input" placeholder="What are you focusing on?" class="flex-1 bg-slate-950/80 border border-slate-850 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-rose-500/60 transition-colors" required>
+            <button type="submit" class="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-rose-400 border border-slate-800 hover:border-slate-700 transition-all flex items-center justify-center" title="Add Task">
+              <i data-lucide="plus" class="w-5 h-5"></i>
+            </button>
+          </form>
+
+          <!-- Tasks List Container -->
+          <div id="tasks-list" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto no-scrollbar py-1">
+            <!-- Dynamic Task items inserted here -->
+            <div id="no-tasks" class="text-center py-6 text-slate-500 text-sm">
+              <i data-lucide="sparkles" class="w-6 h-6 mx-auto mb-2 text-slate-600"></i>
+              No focus tasks yet. Add one to get started!
+            </div>
+          </div>
+        </div>
+
+        <!-- Session Progress Stats Card -->
+        <div class="bg-slate-900/30 backdrop-blur-xl border border-slate-900 rounded-3xl p-6 flex flex-col gap-4">
+          <div class="flex items-center gap-2">
+            <i data-lucide="target" class="w-5 h-5 text-indigo-400"></i>
+            <h2 class="font-bold text-lg text-slate-100">Daily Routine Goal</h2>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-slate-950/40 p-3 rounded-2xl border border-slate-900">
+              <span class="text-xs text-slate-400 block mb-1">Focus Rounds</span>
+              <div class="flex items-baseline gap-1">
+                <span id="stat-completed" class="text-2xl font-bold text-white mono">0</span>
+                <span class="text-xs text-slate-500">/ <span id="target-rounds">4</span></span>
+              </div>
+            </div>
+            <div class="bg-slate-950/40 p-3 rounded-2xl border border-slate-900">
+              <span class="text-xs text-slate-400 block mb-1">Total Time Focused</span>
+              <div class="flex items-baseline gap-1">
+                <span id="stat-minutes" class="text-2xl font-bold text-white mono">0</span>
+                <span class="text-xs text-slate-500">mins</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Micro indicator dots -->
+          <div class="flex items-center gap-2 mt-1">
+            <span class="text-xs text-slate-400">Progress:</span>
+            <div id="target-dots" class="flex items-center gap-1.5">
+              <!-- Instantiated via Javascript -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <!-- TAB 2: ZEN MEDITATION VIEW -->
+    <div id="view-meditate" class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start hidden">
+      
+      <!-- Left Column: Breathing Guide Circle & Controls -->
+      <main class="lg:col-span-7 flex flex-col items-center justify-center bg-slate-900/30 backdrop-blur-xl border border-slate-900 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+        <!-- Glow accents behind meditation -->
+        <div class="absolute -top-12 -left-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-12 -right-12 w-48 h-48 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="text-center mb-6">
+          <h2 class="text-lg font-bold text-slate-200">Interactive Breathing Space</h2>
+          <p class="text-xs text-slate-400 max-w-sm mt-1">Calm your nervous system. Synced to Box Breathing (4s In, 4s Hold, 4s Out, 4s Rest)</p>
+        </div>
+
+        <!-- Breathing Orb Visualizer -->
+        <div class="relative w-60 h-60 sm:w-64 sm:h-64 flex items-center justify-center mb-6">
+          <!-- Background ripple circles -->
+          <div id="meditation-ripple-1" class="absolute inset-0 rounded-full bg-indigo-500/5 border border-indigo-500/10 scale-100 transition-transform duration-[4000ms] ease-in-out"></div>
+          <div id="meditation-ripple-2" class="absolute inset-4 rounded-full bg-indigo-500/10 border border-indigo-400/20 scale-100 transition-transform duration-[4000ms] ease-in-out"></div>
+          
+          <!-- Primary Breathing Orb -->
+          <div id="breathing-orb" class="absolute w-40 h-40 sm:w-44 sm:h-44 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-teal-400 shadow-2xl flex flex-col items-center justify-center text-center p-4 transform scale-90 transition-transform duration-[4000ms] ease-in-out">
+            <span id="breath-action-text" class="text-white text-lg font-extrabold tracking-wider drop-shadow-md">Inhale</span>
+            <span id="breath-countdown" class="text-white/80 text-xs font-bold font-mono mt-1">4s</span>
+          </div>
+        </div>
+
+        <!-- Meditation Timer Progress -->
+        <div class="w-full max-w-sm flex flex-col items-center gap-2 mb-6">
+          <div class="flex justify-between w-full text-xs text-slate-400 font-mono">
+            <span>Duration Remaining</span>
+            <span id="meditation-time-display">05:00</span>
+          </div>
+          <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-900">
+            <div id="meditation-progress-bar" class="bg-gradient-to-r from-indigo-500 to-teal-400 h-full w-0 transition-all duration-1000"></div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center gap-4 w-full justify-center">
+          <button id="meditation-stop-btn" class="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 transition-all hover:scale-105" title="Stop & Reset">
+            <i data-lucide="square" class="w-5 h-5 fill-current"></i>
+          </button>
+          
+          <button id="meditation-play-btn" class="px-8 py-4 rounded-2xl bg-gradient-to-tr from-indigo-500 to-teal-400 hover:from-indigo-600 hover:to-teal-500 text-white font-bold flex items-center gap-3 shadow-lg shadow-indigo-500/25 transition-all hover:scale-105 duration-150 min-w-[140px] justify-center">
+            <i data-lucide="play" id="meditation-play-icon" class="w-5 h-5 fill-current"></i>
+            <span id="meditation-play-text">Begin Session</span>
+          </button>
+        </div>
+      </main>
+
+      <!-- Right Column: Presets & Audio Space -->
+      <section class="lg:col-span-5 flex flex-col gap-6">
+        
+        <!-- Quick Preset Configs -->
+        <div class="bg-slate-900/30 backdrop-blur-xl border border-slate-900 rounded-3xl p-6 flex flex-col gap-4">
+          <div class="flex items-center gap-2">
+            <i data-lucide="hourglass" class="w-5 h-5 text-indigo-400"></i>
+            <h2 class="font-bold text-lg text-slate-100">Session Length</h2>
+          </div>
+          
+          <div class="grid grid-cols-4 gap-2">
+            <button class="med-duration-btn py-2 px-1 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-400 hover:text-white transition-all hover:border-indigo-500/40" data-mins="2">2m</button>
+            <button class="med-duration-btn py-2 px-1 rounded-xl bg-indigo-500 border border-transparent text-xs font-mono text-white transition-all active-med-btn" data-mins="5">5m</button>
+            <button class="med-duration-btn py-2 px-1 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-400 hover:text-white transition-all hover:border-indigo-500/40" data-mins="10">10m</button>
+            <button class="med-duration-btn py-2 px-1 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-400 hover:text-white transition-all hover:border-indigo-500/40" data-mins="20">20m</button>
+          </div>
+        </div>
+
+        <!-- Web Audio Ambient Sound Generator -->
+        <div class="bg-slate-900/30 backdrop-blur-xl border border-slate-900 rounded-3xl p-6 flex flex-col gap-4">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <i data-lucide="music" class="w-5 h-5 text-teal-400"></i>
+              <h2 class="font-bold text-lg text-slate-100">Synthesized Ambient Sounds</h2>
+            </div>
+            <span class="text-[10px] bg-teal-500/10 border border-teal-500/20 text-teal-400 px-2 py-0.5 rounded font-mono">Realtime Web Audio</span>
+          </div>
+          
+          <p class="text-xs text-slate-400">Generate zero-download relaxing audio frequencies straight from your browser.</p>
+
+          <div class="flex flex-col gap-2 mt-2" id="ambient-sound-selectors">
+            <!-- Silence option -->
+            <button class="ambient-track-btn w-full flex items-center justify-between p-3 rounded-xl border border-teal-500/40 bg-slate-900 text-slate-200 transition-all text-left" data-track="none">
+              <div class="flex items-center gap-2.5">
+                <i data-lucide="volume-x" class="w-4 h-4 text-slate-400"></i>
+                <span class="text-sm font-semibold">Absolute Silence</span>
+              </div>
+              <span class="text-xs text-teal-400" id="ambient-active-indicator">Active</span>
+            </button>
+
+            <!-- Binaural beats drone -->
+            <button class="ambient-track-btn w-full flex items-center justify-between p-3 rounded-xl border border-slate-900 bg-slate-950 hover:border-slate-800 hover:bg-slate-900/60 text-slate-400 hover:text-slate-200 transition-all text-left" data-track="theta">
+              <div class="flex items-center gap-2.5">
+                <i data-lucide="activity" class="w-4 h-4 text-teal-400"></i>
+                <div class="flex flex-col">
+                  <span class="text-sm font-semibold">Binaural Theta Beats</span>
+                  <span class="text-[10px] text-slate-500">Dual channel 4Hz focus waves (Use headphones)</span>
+                </div>
+              </div>
+            </button>
+
+            <!-- Celestial drone hum -->
+            <button class="ambient-track-btn w-full flex items-center justify-between p-3 rounded-xl border border-slate-900 bg-slate-950 hover:border-slate-800 hover:bg-slate-900/60 text-slate-400 hover:text-slate-200 transition-all text-left" data-track="cosmos">
+              <div class="flex items-center gap-2.5">
+                <i data-lucide="sun" class="w-4 h-4 text-amber-400 font-bold"></i>
+                <div class="flex flex-col">
+                  <span class="text-sm font-semibold">Deep Cosmic Hum</span>
+                  <span class="text-[10px] text-slate-500">Soothing ambient drone synthesizers</span>
+                </div>
+              </div>
+            </button>
+
+            <!-- Pure rain waves -->
+            <button class="ambient-track-btn w-full flex items-center justify-between p-3 rounded-xl border border-slate-900 bg-slate-950 hover:border-slate-800 hover:bg-slate-900/60 text-slate-400 hover:text-slate-200 transition-all text-left" data-track="waves">
+              <div class="flex items-center gap-2.5">
+                <i data-lucide="waves" class="w-4 h-4 text-indigo-400"></i>
+                <div class="flex flex-col">
+                  <span class="text-sm font-semibold">Zen Ocean Tides</span>
+                  <span class="text-[10px] text-slate-500">Filtered pink noise sweeps for deep breathing</span>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </div>
+
+  <!-- Dialog / Settings Modal -->
+  <div id="settings-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col gap-6">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="sliders" class="w-5 h-5 text-rose-400"></i>
+          <h3 class="text-lg font-bold text-white">Timer Configuration</h3>
+        </div>
+        <button id="close-settings" class="p-1 rounded-lg hover:bg-slate-850 text-slate-400 hover:text-slate-200 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Settings Fields -->
+      <div class="flex flex-col gap-4">
+        <!-- Interval Durations -->
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Intervals (Minutes)</h4>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1">Focus</label>
+            <input type="number" id="setting-pomodoro" min="1" max="180" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-center text-white focus:outline-none focus:border-rose-500">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1">Short Break</label>
+            <input type="number" id="setting-short" min="1" max="60" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-center text-white focus:outline-none focus:border-rose-500">
+          </div>
+          <div>
+            <label class="text-[11px] text-slate-400 block mb-1">Long Break</label>
+            <input type="number" id="setting-long" min="1" max="120" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-center text-white focus:outline-none focus:border-rose-500">
+          </div>
+        </div>
+
+        <!-- Goal target setting -->
+        <div>
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">Daily Goal (Sessions)</label>
+          <input type="number" id="setting-goal" min="1" max="16" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-rose-500">
+        </div>
+
+        <hr class="border-slate-800 my-1">
+
+        <!-- Automation toggles -->
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Preferences</h4>
+        <div class="flex flex-col gap-3">
+          <label class="flex justify-between items-center cursor-pointer">
+            <span class="text-sm text-slate-300">Auto-start Breaks</span>
+            <input type="checkbox" id="setting-auto-break" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500 relative"></div>
+          </label>
+          <label class="flex justify-between items-center cursor-pointer">
+            <span class="text-sm text-slate-300">Auto-start Focus Sessions</span>
+            <input type="checkbox" id="setting-auto-focus" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500 relative"></div>
+          </label>
+          <label class="flex justify-between items-center cursor-pointer">
+            <span class="text-sm text-slate-300">Timer Ticking Sound</span>
+            <input type="checkbox" id="setting-ticking" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500 relative"></div>
+          </label>
+        </div>
+
+        <!-- Volume slider -->
+        <div class="mt-2">
+          <div class="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            <span>Sound Volume</span>
+            <span id="volume-val">70%</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <i data-lucide="volume-1" class="w-4 h-4 text-slate-400"></i>
+            <input type="range" id="setting-volume" min="0" max="100" class="w-full accent-indigo-500 bg-slate-950 rounded-lg appearance-none h-1 cursor-pointer">
+            <i data-lucide="volume-2" class="w-4 h-4 text-slate-400"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Actions -->
+      <button id="save-settings" class="w-full py-3 rounded-2xl bg-gradient-to-tr from-indigo-500 to-teal-400 hover:from-indigo-600 hover:to-teal-500 text-white font-bold transition-all shadow-lg shadow-indigo-500/15 hover:shadow-indigo-500/25">
+        Apply & Save Configurations
+      </button>
+    </div>
+  </div>
+
+  <!-- Dialog / Analytics Modal -->
+  <div id="stats-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col gap-6">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-2">
+          <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-400"></i>
+          <h3 class="text-lg font-bold text-white">Focus Performance</h3>
+        </div>
+        <button id="close-stats" class="p-1 rounded-lg hover:bg-slate-850 text-slate-400 hover:text-slate-200 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Stats Overview -->
+      <div class="flex flex-col gap-4">
+        <div class="bg-slate-950/40 border border-slate-850 p-4 rounded-2xl flex items-center gap-4">
+          <div class="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20 text-indigo-400">
+            <i data-lucide="award" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span class="text-xs text-slate-400 block">Focus Level</span>
+            <span id="achievement-label" class="text-sm font-semibold text-white">Novice Flow</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-950/20 border border-slate-850 p-3.5 rounded-2xl text-center">
+            <span class="text-[11px] text-slate-400 block mb-1">Total Focus Sessions</span>
+            <span id="stats-total-rounds" class="text-2xl font-extrabold text-white mono">0</span>
+          </div>
+          <div class="bg-slate-950/20 border border-slate-850 p-3.5 rounded-2xl text-center">
+            <span class="text-[11px] text-slate-400 block mb-1">Total Minutes Spent</span>
+            <span id="stats-total-minutes" class="text-2xl font-extrabold text-white mono">0</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-950/20 border border-slate-850 p-4 rounded-2xl">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Today's Timeline</h4>
+          <div id="timeline-list" class="flex flex-col gap-2 max-h-[150px] overflow-y-auto no-scrollbar text-xs">
+            <!-- Timeline details added here via JS -->
+            <div class="text-slate-500 text-center py-4">No completed sessions logged yet today.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reset Stats Action -->
+      <button id="reset-stats-btn" class="w-full py-2.5 rounded-xl border border-slate-800 hover:border-red-500/30 text-xs text-slate-500 hover:text-red-400 transition-all font-semibold">
+        Reset Analytical Tracking Data
+      </button>
+    </div>
+  </div>
+
+  <!-- Custom Banner Notification Toast -->
+  <div id="toast-notif" class="fixed bottom-6 right-6 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl flex items-center gap-3 transform translate-y-12 opacity-0 pointer-events-none transition-all duration-300 z-50">
+    <div class="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400" id="toast-icon">
+      <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+    </div>
+    <div>
+      <h4 class="font-bold text-sm text-slate-100" id="toast-title">Task Completed</h4>
+      <p class="text-xs text-slate-400" id="toast-msg">Well done on finishing your session!</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="w-full py-4 text-center text-xs text-slate-600 border-t border-slate-950 bg-slate-950/50">
+    <div class="flex justify-center items-center gap-2">
+      <span>Focus fully. Relax deeply.</span>
+      <span>•</span>
+      <span>ZenFlow Interactive Studio</span>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Sound Synthesizer via Web Audio API (No outside assets needed)
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+    let ambientNodes = {}; // Container for active ambient synthesizers
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new AudioContext();
+      }
+      return audioCtx;
+    }
+
+    // Play a custom synthesised chime sound
+    function playChime(type) {
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+
+        const volume = (parseInt(document.getElementById('setting-volume').value) || 70) / 100;
+        if (volume === 0) return;
+
+        const mainGain = ctx.createGain();
+        mainGain.gain.setValueAtTime(volume, ctx.currentTime);
+        mainGain.connect(ctx.destination);
+
+        if (type === 'complete') {
+          // Play a harmonious chime combination (C Major chord cascade)
+          const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const noteGain = ctx.createGain();
+            
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + (idx * 0.12));
+            
+            noteGain.gain.setValueAtTime(0, ctx.currentTime + (idx * 0.12));
+            noteGain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + (idx * 0.12) + 0.05);
+            noteGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + (idx * 0.12) + 1.2);
+            
+            osc.connect(noteGain);
+            noteGain.connect(mainGain);
+            
+            osc.start(ctx.currentTime + (idx * 0.12));
+            osc.stop(ctx.currentTime + (idx * 0.12) + 1.5);
+          });
+        } else if (type === 'tick') {
+          // A very soft clock sound
+          const osc = ctx.createOscillator();
+          const noteGain = ctx.createGain();
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(800, ctx.currentTime);
+          
+          noteGain.gain.setValueAtTime(0.015, ctx.currentTime);
+          noteGain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.05);
+          
+          osc.connect(noteGain);
+          noteGain.connect(mainGain);
+          
+          osc.start();
+          osc.stop(ctx.currentTime + 0.06);
+        } else if (type === 'click') {
+          // Interface feedback
+          const osc = ctx.createOscillator();
+          const noteGain = ctx.createGain();
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(500, ctx.currentTime);
+          
+          noteGain.gain.setValueAtTime(0.04, ctx.currentTime);
+          noteGain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.08);
+          
+          osc.connect(noteGain);
+          noteGain.connect(mainGain);
+          
+          osc.start();
+          osc.stop(ctx.currentTime + 0.1);
+        }
+      } catch (e) {
+        console.warn('Audio context failed to play sound', e);
+      }
+    }
+
+    // Dynamic Ambient Sound Synthesizer Node Constructors
+    function playAmbientSound(type) {
+      stopAmbientSound(); // Reset previous running ambient sound
+      if (type === 'none') return;
+
+      try {
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+
+        const volumeVal = (parseInt(document.getElementById('setting-volume').value) || 70) / 100;
+        const volume = volumeVal * 0.45; // Soften ambient volume so it sits nicely in the background
+        if (volume === 0) return;
+
+        const mainGain = ctx.createGain();
+        mainGain.gain.setValueAtTime(volume, ctx.currentTime);
+        mainGain.connect(ctx.destination);
+        ambientNodes.gain = mainGain;
+
+        if (type === 'theta') {
+          // Binaural focus beats. One channel gets 110Hz, the other 114Hz -> 4Hz Theta beat
+          const oscLeft = ctx.createOscillator();
+          const oscRight = ctx.createOscillator();
+          const merger = ctx.createChannelMerger(2);
+
+          oscLeft.type = 'sine';
+          oscLeft.frequency.setValueAtTime(110, ctx.currentTime);
+
+          oscRight.type = 'sine';
+          oscRight.frequency.setValueAtTime(114, ctx.currentTime);
+
+          const gainL = ctx.createGain();
+          const gainR = ctx.createGain();
+          gainL.gain.value = 0.5;
+          gainR.gain.value = 0.5;
+
+          oscLeft.connect(gainL).connect(merger, 0, 0);
+          oscRight.connect(gainR).connect(merger, 0, 1);
+          merger.connect(mainGain);
+
+          oscLeft.start();
+          oscRight.start();
+
+          ambientNodes.sources = [oscLeft, oscRight];
+
+        } else if (type === 'cosmos') {
+          // A rich celestial hum using layered low-frequency oscillators and slight pitch modulation
+          const osc1 = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const filter = ctx.createBiquadFilter();
+
+          osc1.type = 'sawtooth';
+          osc1.frequency.setValueAtTime(65.41, ctx.currentTime); // C2
+
+          osc2.type = 'triangle';
+          osc2.frequency.setValueAtTime(130.81, ctx.currentTime); // C3
+
+          // Slow LFO to modulate filter cut-off frequency dynamically (wah-wah shimmer)
+          const lfo = ctx.createOscillator();
+          const lfoGain = ctx.createGain();
+          lfo.frequency.value = 0.15; // Slow modulation 0.15Hz
+          lfoGain.gain.value = 300; // Sweep range
+
+          filter.type = 'lowpass';
+          filter.Q.value = 5;
+
+          lfo.connect(lfoGain).connect(filter.frequency);
+          osc1.connect(filter);
+          osc2.connect(filter);
+          filter.connect(mainGain);
+
+          osc1.start();
+          osc2.start();
+          lfo.start();
+
+          ambientNodes.sources = [osc1, osc2, lfo];
+
+        } else if (type === 'waves') {
+          // Synthesize Ocean shore sounds using lowpass filtered White/Pink noise & wave sweep LFO
+          const bufferSize = ctx.sampleRate * 2;
+          const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+
+          // Fill buffer with random noise values
+          for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+          }
+
+          const whiteNoise = ctx.createBufferSource();
+          whiteNoise.buffer = noiseBuffer;
+          whiteNoise.loop = true;
+
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.Q.value = 1.2;
+
+          // LFO to simulate slow, 6-second inhalation/exhalation tides
+          const sweepLfo = ctx.createOscillator();
+          const sweepGain = ctx.createGain();
+          sweepLfo.frequency.value = 0.12; // Ocean rhythm frequency
+          sweepGain.gain.value = 500; // sweep amplitude
+
+          sweepLfo.connect(sweepGain).connect(filter.frequency);
+          whiteNoise.connect(filter).connect(mainGain);
+
+          whiteNoise.start();
+          sweepLfo.start();
+
+          ambientNodes.sources = [whiteNoise, sweepLfo];
+        }
+      } catch (err) {
+        console.warn('Web Audio Ambient Synthesizer encountered an issue:', err);
+      }
+    }
+
+    function stopAmbientSound() {
+      if (ambientNodes.sources) {
+        ambientNodes.sources.forEach(src => {
+          try { src.stop(); } catch(e){}
+        });
+      }
+      if (ambientNodes.gain) {
+        try { ambientNodes.gain.disconnect(); } catch(e){}
+      }
+      ambientNodes = {};
+    }
+
+    // Default configuration object
+    const CONFIG = {
+      pomodoro: 25,
+      short: 5,
+      long: 15,
+      goal: 4,
+      autoStartBreak: false,
+      autoStartFocus: false,
+      ticking: false,
+      volume: 70
+    };
+
+    // State object
+    let state = {
+      mode: 'pomodoro', // 'pomodoro' | 'short' | 'long'
+      timeLeft: CONFIG.pomodoro * 60,
+      totalDuration: CONFIG.pomodoro * 60,
+      isRunning: false,
+      timerId: null,
+      completedToday: 0,
+      totalMinutes: 0,
+      currentTaskId: null,
+      tasks: [],
+      sessionLog: []
+    };
+
+    // Meditation State
+    let medState = {
+      isRunning: false,
+      timerId: null,
+      timeLeft: 300, // 5 minutes standard default
+      totalDuration: 300,
+      breathCycleId: null,
+      selectedTrack: 'none'
+    };
+
+    // DOM Elements - Navigation Views
+    const tabFocus = document.getElementById('tab-focus');
+    const tabMeditate = document.getElementById('tab-meditate');
+    const viewFocus = document.getElementById('view-focus');
+    const viewMeditate = document.getElementById('view-meditate');
+
+    // DOM Elements - Timer
+    const timerDisplay = document.getElementById('timer-display');
+    const timerStateLabel = document.getElementById('timer-state-label');
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    const playText = document.getElementById('play-text');
+    const playIcon = document.getElementById('play-icon');
+    const skipBtn = document.getElementById('skip-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const progressCircle = document.getElementById('progress-circle');
+    const activeTaskLabel = document.getElementById('active-task-label');
+
+    const modePomodoro = document.getElementById('mode-pomodoro');
+    const modeShort = document.getElementById('mode-short');
+    const modeLong = document.getElementById('mode-long');
+
+    const glowEffect = document.getElementById('glow-effect');
+
+    // DOM Elements - Meditation
+    const breathingOrb = document.getElementById('breathing-orb');
+    const breathActionText = document.getElementById('breath-action-text');
+    const breathCountdown = document.getElementById('breath-countdown');
+    const meditationTimeDisplay = document.getElementById('meditation-time-display');
+    const meditationProgressBar = document.getElementById('meditation-progress-bar');
+    const meditationPlayBtn = document.getElementById('meditation-play-btn');
+    const meditationPlayText = document.getElementById('meditation-play-text');
+    const meditationPlayIcon = document.getElementById('meditation-play-icon');
+    const meditationStopBtn = document.getElementById('meditation-stop-btn');
+    const ambientSelectors = document.getElementById('ambient-sound-selectors');
+    const ripple1 = document.getElementById('meditation-ripple-1');
+    const ripple2 = document.getElementById('meditation-ripple-2');
+
+    // Stats card elements
+    const statCompleted = document.getElementById('stat-completed');
+    const statMinutes = document.getElementById('stat-minutes');
+    const targetRounds = document.getElementById('target-rounds');
+    const targetDots = document.getElementById('target-dots');
+
+    // Modals
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettings = document.getElementById('close-settings');
+    const saveSettings = document.getElementById('save-settings');
+
+    const statsBtn = document.getElementById('stats-btn');
+    const statsModal = document.getElementById('stats-modal');
+    const closeStats = document.getElementById('close-stats');
+    const resetStatsBtn = document.getElementById('reset-stats-btn');
+
+    // Input fields inside Settings
+    const settingPomo = document.getElementById('setting-pomodoro');
+    const settingShort = document.getElementById('setting-short');
+    const settingLong = document.getElementById('setting-long');
+    const settingGoal = document.getElementById('setting-goal');
+    const settingAutoBreak = document.getElementById('setting-auto-break');
+    const settingAutoFocus = document.getElementById('setting-auto-focus');
+    const settingTicking = document.getElementById('setting-ticking');
+    const settingVolume = document.getElementById('setting-volume');
+    const volumeVal = document.getElementById('volume-val');
+
+    // Stats fields
+    const achievementLabel = document.getElementById('achievement-label');
+    const statsTotalRounds = document.getElementById('stats-total-rounds');
+    const statsTotalMinutes = document.getElementById('stats-total-minutes');
+    const timelineList = document.getElementById('timeline-list');
+
+    // ToDo list elements
+    const todoForm = document.getElementById('todo-form');
+    const todoInput = document.getElementById('todo-input');
+    const tasksList = document.getElementById('tasks-list');
+    const taskCount = document.getElementById('task-count');
+    const noTasks = document.getElementById('no-tasks');
+
+    // Toast elements
+    const toastNotif = document.getElementById('toast-notif');
+    const toastTitle = document.getElementById('toast-title');
+    const toastMsg = document.getElementById('toast-msg');
+    const toastIcon = document.getElementById('toast-icon');
+
+    // Load LocalStorage/Local persistence if exists
+    function loadSavedState() {
+      const savedConfig = localStorage.getItem('zenflow_config');
+      if (savedConfig) {
+        Object.assign(CONFIG, JSON.parse(savedConfig));
+      }
+
+      const savedStats = localStorage.getItem('zenflow_stats_v2');
+      if (savedStats) {
+        const parsed = JSON.parse(savedStats);
+        state.completedToday = parsed.completedToday || 0;
+        state.totalMinutes = parsed.totalMinutes || 0;
+        state.sessionLog = parsed.sessionLog || [];
+      }
+
+      const savedTasks = localStorage.getItem('zenflow_tasks');
+      if (savedTasks) {
+        state.tasks = JSON.parse(savedTasks);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem('zenflow_config', JSON.stringify(CONFIG));
+      localStorage.setItem('zenflow_stats_v2', JSON.stringify({
+        completedToday: state.completedToday,
+        totalMinutes: state.totalMinutes,
+        sessionLog: state.sessionLog
+      }));
+      localStorage.setItem('zenflow_tasks', JSON.stringify(state.tasks));
+    }
+
+    // Tab Switch Controller
+    tabFocus.addEventListener('click', () => {
+      tabFocus.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-white transition-all";
+      tabMeditate.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition-all";
+      viewFocus.classList.remove('hidden');
+      viewMeditate.classList.add('hidden');
+      
+      // Stop meditation systems when leaving tab
+      pauseMeditation();
+      stopAmbientSound();
+    });
+
+    tabMeditate.addEventListener('click', () => {
+      tabMeditate.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-white transition-all";
+      tabFocus.className = "flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition-all";
+      viewFocus.classList.add('hidden');
+      viewMeditate.classList.remove('hidden');
+      
+      // Stop focus timer if running
+      pauseTimer();
+      resetMeditationView();
+    });
+
+    // Modal helpers
+    function openModal(modal) {
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('.transform').classList.remove('scale-95');
+        modal.querySelector('.transform').classList.add('scale-100');
+      }, 10);
+    }
+
+    function closeModal(modal) {
+      modal.classList.add('opacity-0');
+      modal.querySelector('.transform').classList.remove('scale-100');
+      modal.querySelector('.transform').classList.add('scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+      }, 300);
+    }
+
+    // Settings logic
+    settingsBtn.addEventListener('click', () => {
+      // Sync form with config values
+      settingPomo.value = CONFIG.pomodoro;
+      settingShort.value = CONFIG.short;
+      settingLong.value = CONFIG.long;
+      settingGoal.value = CONFIG.goal;
+      settingAutoBreak.checked = CONFIG.autoStartBreak;
+      settingAutoFocus.checked = CONFIG.autoStartFocus;
+      settingTicking.checked = CONFIG.ticking;
+      settingVolume.value = CONFIG.volume;
+      volumeVal.textContent = CONFIG.volume + '%';
+
+      openModal(settingsModal);
+    });
+
+    closeSettings.addEventListener('click', () => closeModal(settingsModal));
+
+    settingVolume.addEventListener('input', (e) => {
+      volumeVal.textContent = e.target.value + '%';
+      // Sync audio parameters dynamically if playing
+      if (medState.isRunning && medState.selectedTrack !== 'none') {
+        playAmbientSound(medState.selectedTrack);
+      }
+    });
+
+    saveSettings.addEventListener('click', () => {
+      // Read values and validate
+      const pomo = Math.max(1, parseInt(settingPomo.value) || 25);
+      const sBreak = Math.max(1, parseInt(settingShort.value) || 5);
+      const lBreak = Math.max(1, parseInt(settingLong.value) || 15);
+      const goal = Math.max(1, parseInt(settingGoal.value) || 4);
+
+      CONFIG.pomodoro = pomo;
+      CONFIG.short = sBreak;
+      CONFIG.long = lBreak;
+      CONFIG.goal = goal;
+      CONFIG.autoStartBreak = settingAutoBreak.checked;
+      CONFIG.autoStartFocus = settingAutoFocus.checked;
+      CONFIG.ticking = settingTicking.checked;
+      CONFIG.volume = parseInt(settingVolume.value);
+
+      saveState();
+      closeModal(settingsModal);
+      showToast('Settings Saved', 'Configurations applied successfully!', 'check-circle-2');
+
+      // Update active timer duration with new configs if reset or idle
+      if (!state.isRunning) {
+        switchMode(state.mode, false);
+      }
+      updateDailyGoalVisuals();
+    });
+
+    // Stats and analytical details modal
+    statsBtn.addEventListener('click', () => {
+      statsTotalRounds.textContent = state.completedToday;
+      statsTotalMinutes.textContent = state.totalMinutes;
+
+      // Calculate progress ranks
+      let level = "Novice Focus";
+      if (state.totalMinutes > 300) level = "Zen Grandmaster 🌟";
+      else if (state.totalMinutes > 150) level = "Peak Flow Shaper 🔥";
+      else if (state.totalMinutes > 60) level = "Deep Focus Expert 🎯";
+      else if (state.totalMinutes > 25) level = "Consistent Tracker ⏱️";
+      achievementLabel.textContent = level;
+
+      // Render chronological session log
+      timelineList.innerHTML = '';
+      if (state.sessionLog.length === 0) {
+        timelineList.innerHTML = '<div class="text-slate-500 text-center py-4">No completed sessions logged yet today.</div>';
+      } else {
+        [...state.sessionLog].reverse().forEach(log => {
+          const item = document.createElement('div');
+          item.className = 'flex justify-between items-center py-2 border-b border-slate-850';
+          
+          let iconColor = 'text-rose-400';
+          let bgClass = 'bg-rose-500/10';
+          
+          if (log.type === 'short' || log.type === 'long') {
+            iconColor = 'text-emerald-400';
+            bgClass = 'bg-emerald-500/10';
+          } else if (log.type === 'meditation') {
+            iconColor = 'text-indigo-400';
+            bgClass = 'bg-indigo-500/10';
+          }
+
+          const typeName = log.type === 'pomodoro' 
+            ? 'Focus Session' 
+            : log.type === 'meditation' 
+              ? 'Sanctuary Meditation' 
+              : log.type + ' Break';
+
+          item.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full ${log.type === 'pomodoro' ? 'bg-rose-500' : log.type === 'meditation' ? 'bg-indigo-500' : 'bg-emerald-500'}"></span>
+              <span class="text-slate-300 font-medium capitalize">${typeName}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400 font-mono text-[11px]">${log.time}</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] ${bgClass} ${iconColor} font-mono">${log.duration}m</span>
+            </div>
+          `;
+          timelineList.appendChild(item);
+        });
+      }
+
+      openModal(statsModal);
+    });
+
+    closeStats.addEventListener('click', () => closeModal(statsModal));
+
+    resetStatsBtn.addEventListener('click', () => {
+      if (confirm('Are you absolutely sure you want to clear your local focus statistics? This cannot be undone.')) {
+        state.completedToday = 0;
+        state.totalMinutes = 0;
+        state.sessionLog = [];
+        saveState();
+        closeModal(statsModal);
+        updateDailyGoalVisuals();
+        showToast('Stats Cleared', 'Your history has been completely wiped.', 'trash-2');
+      }
+    });
+
+    // Handle outside clicks to close modals
+    window.addEventListener('click', (e) => {
+      if (e.target === settingsModal) closeModal(settingsModal);
+      if (e.target === statsModal) closeModal(statsModal);
+    });
+
+    // Custom Toast notification animation
+    let toastTimeout = null;
+    function showToast(title, message, iconName = 'bell') {
+      clearTimeout(toastTimeout);
+      toastTitle.textContent = title;
+      toastMsg.textContent = message;
+      
+      // Update icon dynamically
+      toastIcon.innerHTML = `<i data-lucide="${iconName}" class="w-5 h-5"></i>`;
+      lucide.createIcons();
+
+      toastNotif.classList.remove('opacity-0', 'translate-y-12', 'pointer-events-none');
+      toastNotif.classList.add('opacity-100', 'translate-y-0');
+
+      toastTimeout = setTimeout(() => {
+        toastNotif.classList.remove('opacity-100', 'translate-y-0');
+        toastNotif.classList.add('opacity-0', 'translate-y-12', 'pointer-events-none');
+      }, 4000);
+    }
+
+    // Daily Goal UI tracker dots builder
+    function updateDailyGoalVisuals() {
+      statCompleted.textContent = state.completedToday;
+      statMinutes.textContent = state.totalMinutes;
+      targetRounds.textContent = CONFIG.goal;
+
+      // Draw goal tracking micro dots
+      targetDots.innerHTML = '';
+      for (let i = 0; i < CONFIG.goal; i++) {
+        const dot = document.createElement('div');
+        dot.className = `w-3 h-3 rounded-full border transition-all ${
+          i < state.completedToday 
+            ? 'bg-gradient-to-tr from-rose-500 to-orange-400 border-transparent shadow shadow-rose-500/50 scale-110' 
+            : 'bg-slate-900 border-slate-800'
+        }`;
+        targetDots.appendChild(dot);
+      }
+    }
+
+    // Theme adjustment based on Focus vs Breaks
+    function applyVisualPalette(mode) {
+      const gradStop1 = document.getElementById('grad-stop-1');
+      const gradStop2 = document.getElementById('grad-stop-2');
+
+      // Remove current mode styling from all tabs
+      [modePomodoro, modeShort, modeLong].forEach(btn => {
+        btn.className = 'flex-1 py-2 px-3 text-sm font-semibold rounded-xl text-slate-400 hover:text-slate-200 transition-all duration-300';
+      });
+
+      if (mode === 'pomodoro') {
+        modePomodoro.className = 'flex-1 py-2 px-3 text-sm font-semibold rounded-xl transition-all duration-300 bg-rose-500 text-white shadow-lg shadow-rose-500/10';
+        glowEffect.className = "absolute -top-12 -left-12 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl transition-all duration-700 pointer-events-none";
+        gradStop1.setAttribute('stop-color', '#f43f5e'); // Rose 500
+        gradStop2.setAttribute('stop-color', '#fb923c'); // Orange 400
+        timerStateLabel.className = "text-[10px] tracking-widest uppercase font-bold text-rose-400/95 mt-2 bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/20";
+        playPauseBtn.className = "px-8 py-4 rounded-2xl bg-gradient-to-tr from-rose-500 to-orange-400 hover:from-rose-600 hover:to-orange-500 text-white font-bold flex items-center gap-3 shadow-lg shadow-rose-500/25 transition-all hover:scale-105 active:scale-95 duration-150 min-w-[140px] justify-center";
+      } else if (mode === 'short') {
+        modeShort.className = 'flex-1 py-2 px-3 text-sm font-semibold rounded-xl transition-all duration-300 bg-emerald-500 text-white shadow-lg shadow-emerald-500/10';
+        glowEffect.className = "absolute -top-12 -left-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl transition-all duration-700 pointer-events-none";
+        gradStop1.setAttribute('stop-color', '#10b981'); // Emerald 500
+        gradStop2.setAttribute('stop-color', '#34d399'); // Emerald 400
+        timerStateLabel.className = "text-[10px] tracking-widest uppercase font-bold text-emerald-400/95 mt-2 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20";
+        playPauseBtn.className = "px-8 py-4 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 hover:from-emerald-600 hover:to-teal-500 text-white font-bold flex items-center gap-3 shadow-lg shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95 duration-150 min-w-[140px] justify-center";
+      } else if (mode === 'long') {
+        modeLong.className = 'flex-1 py-2 px-3 text-sm font-semibold rounded-xl transition-all duration-300 bg-cyan-500 text-white shadow-lg shadow-cyan-500/10';
+        glowEffect.className = "absolute -top-12 -left-12 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl transition-all duration-700 pointer-events-none";
+        gradStop1.setAttribute('stop-color', '#06b6d4'); // Cyan 500
+        gradStop2.setAttribute('stop-color', '#38bdf8'); // Sky 400
+        timerStateLabel.className = "text-[10px] tracking-widest uppercase font-bold text-cyan-400/95 mt-2 bg-cyan-500/10 px-2.5 py-0.5 rounded-full border border-cyan-500/20";
+        playPauseBtn.className = "px-8 py-4 rounded-2xl bg-gradient-to-tr from-cyan-500 to-sky-400 hover:from-cyan-600 hover:to-sky-500 text-white font-bold flex items-center gap-3 shadow-lg shadow-cyan-500/25 transition-all hover:scale-105 active:scale-95 duration-150 min-w-[140px] justify-center";
+      }
+    }
+
+    // Core Timer Operations
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateProgressRing() {
+      const radius = 45; // 45% radius configured in SVG
+      const circumference = 2 * Math.PI * (288 * 0.45); // Using 288px as estimated viewBox matching
+      
+      const realCircumference = 2 * Math.PI * 130; // Matches precise 45% of 288 viewBox diameter
+      progressCircle.style.strokeDasharray = realCircumference;
+      
+      const percentRemaining = state.timeLeft / state.totalDuration;
+      const offset = realCircumference - (percentRemaining * realCircumference);
+      
+      progressCircle.style.strokeDashoffset = offset;
+    }
+
+    function switchMode(newMode, autoStart = false) {
+      // Pause active intervals
+      if (state.isRunning) {
+        clearInterval(state.timerId);
+        state.isRunning = false;
+      }
+
+      state.mode = newMode;
+      let targetMins = CONFIG.pomodoro;
+      if (newMode === 'short') targetMins = CONFIG.short;
+      if (newMode === 'long') targetMins = CONFIG.long;
+
+      state.timeLeft = targetMins * 60;
+      state.totalDuration = targetMins * 60;
+
+      // Render
+      applyVisualPalette(newMode);
+      timerDisplay.textContent = formatTime(state.timeLeft);
+      updateProgressRing();
+      updatePlayButtonUI();
+
+      // Configure helper label text
+      if (newMode === 'pomodoro') {
+        timerStateLabel.textContent = "Ready Focus";
+        updateActiveTaskLabel();
+      } else {
+        timerStateLabel.textContent = "Break Phase";
+        activeTaskLabel.textContent = newMode === 'short' ? "Quick Breather" : "Extended Pause";
+      }
+
+      // Update Browser Title tab status
+      document.title = `${formatTime(state.timeLeft)} | ZenFlow`;
+
+      if (autoStart) {
+        startTimer();
+      }
+    }
+
+    function updateActiveTaskLabel() {
+      if (state.mode !== 'pomodoro') return;
+
+      const activeTask = state.tasks.find(t => t.id === state.currentTaskId);
+      if (activeTask) {
+        activeTaskLabel.textContent = activeTask.text;
+      } else {
+        activeTaskLabel.textContent = "Focus Session";
+      }
+    }
+
+    function updatePlayButtonUI() {
+      if (state.isRunning) {
+        playText.textContent = "Pause";
+        playIcon.setAttribute('data-lucide', 'pause');
+        timerStateLabel.textContent = state.mode === 'pomodoro' ? "Flowing" : "Resting";
+      } else {
+        playText.textContent = "Start";
+        playIcon.setAttribute('data-lucide', 'play');
+        timerStateLabel.textContent = "Paused";
+      }
+      lucide.createIcons();
+    }
+
+    function startTimer() {
+      getAudioContext(); // Initialize context on user click
+      state.isRunning = true;
+      updatePlayButtonUI();
+
+      state.timerId = setInterval(() => {
+        if (state.timeLeft > 0) {
+          state.timeLeft--;
+          timerDisplay.textContent = formatTime(state.timeLeft);
+          document.title = `(${formatTime(state.timeLeft)}) Focus`;
+          updateProgressRing();
+
+          // Soft ambient tick if configured
+          if (CONFIG.ticking && state.timeLeft % 2 === 0) {
+            playChime('tick');
+          }
+        } else {
+          handleCycleComplete();
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      clearInterval(state.timerId);
+      state.isRunning = false;
+      updatePlayButtonUI();
+    }
+
+    function toggleTimer() {
+      playChime('click');
+      if (state.isRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    }
+
+    function handleCycleComplete() {
+      clearInterval(state.timerId);
+      state.isRunning = false;
+      playChime('complete');
+
+      const completedMode = state.mode;
+      const durationMins = Math.round(state.totalDuration / 60);
+
+      // Log to analytics history
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      state.sessionLog.push({
+        type: completedMode,
+        duration: durationMins,
+        time: timeStr
+      });
+
+      if (completedMode === 'pomodoro') {
+        state.completedToday++;
+        state.totalMinutes += durationMins;
+
+        // Increment pomodoro count inside active task if selected
+        if (state.currentTaskId) {
+          const taskIdx = state.tasks.findIndex(t => t.id === state.currentTaskId);
+          if (taskIdx !== -1) {
+            state.tasks[taskIdx].completedSessions++;
+            renderTasks();
+          }
+        }
+
+        showToast('Focus Session Complete!', 'Splendid focus! Grab a soft drink and rest.', 'award');
+        
+        // Auto routing to Break selection
+        const completedAConsecutiveGoal = (state.completedToday % 4 === 0);
+        const nextMode = completedAConsecutiveGoal ? 'long' : 'short';
+        
+        saveState();
+        updateDailyGoalVisuals();
+        switchMode(nextMode, CONFIG.autoStartBreak);
+
+      } else {
+        // Break phase completed
+        showToast('Break Finished', 'Time to build momentum. Ready to focus?', 'coffee');
+        saveState();
+        updateDailyGoalVisuals();
+        switchMode('pomodoro', CONFIG.autoStartFocus);
+      }
+    }
+
+    // Skip current interval session
+    skipBtn.addEventListener('click', () => {
+      playChime('click');
+      if (confirm(`Skip current ${state.mode} session? Progress for this block will not be logged.`)) {
+        if (state.mode === 'pomodoro') {
+          switchMode('short', false);
+        } else {
+          switchMode('pomodoro', false);
+        }
+      }
+    });
+
+    // Reset current timer sequence
+    resetBtn.addEventListener('click', () => {
+      playChime('click');
+      switchMode(state.mode, false);
+    });
+
+    // Mode selection trigger buttons
+    modePomodoro.addEventListener('click', () => {
+      if (state.mode !== 'pomodoro') {
+        playChime('click');
+        switchMode('pomodoro', false);
+      }
+    });
+
+    modeShort.addEventListener('click', () => {
+      if (state.mode !== 'short') {
+        playChime('click');
+        switchMode('short', false);
+      }
+    });
+
+    modeLong.addEventListener('click', () => {
+      if (state.mode !== 'long') {
+        playChime('click');
+        switchMode('long', false);
+      }
+    });
+
+    playPauseBtn.addEventListener('click', toggleTimer);
+
+
+    // ================== ZEN MEDITATION LOGIC ==================
+
+    // Breathing Rhythm Config - Box Breathing structure (Inhale, Hold, Exhale, Hold - 4 seconds each)
+    const breathStages = [
+      { action: 'Inhale', scale: 'scale-[1.15]', bg: 'from-indigo-600 to-teal-400', rippleScale: 'scale-[1.25]', op: 'opacity-100' },
+      { action: 'Hold', scale: 'scale-[1.15]', bg: 'from-indigo-600 to-teal-400', rippleScale: 'scale-[1.35]', op: 'opacity-80' },
+      { action: 'Exhale', scale: 'scale-[0.85]', bg: 'from-indigo-800 to-teal-600', rippleScale: 'scale-100', op: 'opacity-30' },
+      { action: 'Rest', scale: 'scale-[0.85]', bg: 'from-indigo-800 to-teal-600', rippleScale: 'scale-100', op: 'opacity-20' }
+    ];
+
+    let currentBreathStageIdx = 0;
+    let breathTimeLeft = 4; // Each phase lasts 4 seconds
+
+    function triggerBreathAnimationCycle() {
+      const stage = breathStages[currentBreathStageIdx];
+      
+      // Update interactive HTML UI
+      breathActionText.textContent = stage.action;
+      breathCountdown.textContent = `${breathTimeLeft}s`;
+
+      // Apply gorgeous transition scales and opacities to orb and outer circles
+      breathingOrb.className = `absolute w-40 h-40 sm:w-44 sm:h-44 rounded-full bg-gradient-to-tr ${stage.bg} shadow-2xl flex flex-col items-center justify-center text-center p-4 transform ${stage.scale} transition-all duration-1000 ease-in-out`;
+      
+      ripple1.className = `absolute inset-0 rounded-full bg-indigo-500/5 border border-indigo-500/10 ${stage.rippleScale} ${stage.op} transition-all duration-[4000ms] ease-in-out`;
+      ripple2.className = `absolute inset-4 rounded-full bg-indigo-500/10 border border-indigo-400/20 ${stage.rippleScale} ${stage.op} transition-all duration-[4000ms] ease-in-out`;
+    }
+
+    function runBreathingLoop() {
+      medState.breathCycleId = setInterval(() => {
+        if (!medState.isRunning) return;
+
+        breathTimeLeft--;
+        if (breathTimeLeft <= 0) {
+          // Progress stages
+          currentBreathStageIdx = (currentBreathStageIdx + 1) % 4;
+          breathTimeLeft = 4; // reset counter
+          // Soft tactile feedback chime on transition
+          if (CONFIG.volume > 0 && medState.selectedTrack === 'none') {
+            playChime('tick');
+          }
+        }
+        triggerBreathAnimationCycle();
+      }, 1000);
+    }
+
+    function updateMeditationTimerProgress() {
+      meditationTimeDisplay.textContent = formatTime(medState.timeLeft);
+      const ratio = ((medState.totalDuration - medState.timeLeft) / medState.totalDuration) * 100;
+      meditationProgressBar.style.width = `${ratio}%`;
+    }
+
+    function resetMeditationView() {
+      pauseMeditation();
+      medState.timeLeft = medState.totalDuration;
+      updateMeditationTimerProgress();
+      
+      currentBreathStageIdx = 0;
+      breathTimeLeft = 4;
+      breathActionText.textContent = "Prepare";
+      breathCountdown.textContent = "Ready";
+      breathingOrb.className = "absolute w-40 h-40 sm:w-44 sm:h-44 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-teal-400 shadow-2xl flex flex-col items-center justify-center text-center p-4 transform scale-90 transition-all duration-1000 ease-in-out";
+      
+      ripple1.className = "absolute inset-0 rounded-full bg-indigo-500/5 border border-indigo-500/10 scale-100 transition-transform duration-[4000ms] ease-in-out";
+      ripple2.className = "absolute inset-4 rounded-full bg-indigo-500/10 border border-indigo-400/20 scale-100 transition-transform duration-[4000ms] ease-in-out";
+
+      meditationPlayText.textContent = "Begin Session";
+      meditationPlayIcon.setAttribute('data-lucide', 'play');
+      lucide.createIcons();
+    }
+
+    function pauseMeditation() {
+      clearInterval(medState.timerId);
+      clearInterval(medState.breathCycleId);
+      medState.isRunning = false;
+      
+      meditationPlayText.textContent = "Resume Session";
+      meditationPlayIcon.setAttribute('data-lucide', 'play');
+      lucide.createIcons();
+    }
+
+    function handleMeditationComplete() {
+      pauseMeditation();
+      playChime('complete');
+
+      const completedMins = Math.round(medState.totalDuration / 60);
+      
+      // Update global states & save
+      state.completedToday++;
+      state.totalMinutes += completedMins;
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      state.sessionLog.push({
+        type: 'meditation',
+        duration: completedMins,
+        time: timeStr
+      });
+
+      saveState();
+      updateDailyGoalVisuals();
+      resetMeditationView();
+      showToast('Sanctuary Complete', 'Splendid meditation. You have nourished your mind.', 'peace');
+    }
+
+    function startMeditation() {
+      getAudioContext(); // Initialize context
+      medState.isRunning = true;
+      meditationPlayText.textContent = "Pause Space";
+      meditationPlayIcon.setAttribute('data-lucide', 'pause');
+      lucide.createIcons();
+
+      // Trigger synthesized music
+      playAmbientSound(medState.selectedTrack);
+
+      triggerBreathAnimationCycle();
+      runBreathingLoop();
+
+      medState.timerId = setInterval(() => {
+        if (medState.timeLeft > 0) {
+          medState.timeLeft--;
+          updateMeditationTimerProgress();
+          document.title = `${formatTime(medState.timeLeft)} | Meditating`;
+        } else {
+          handleMeditationComplete();
+        }
+      }, 1000);
+    }
+
+    // Meditation Play/Pause Actions
+    meditationPlayBtn.addEventListener('click', () => {
+      playChime('click');
+      if (medState.isRunning) {
+        pauseMeditation();
+        stopAmbientSound();
+      } else {
+        startMeditation();
+      }
+    });
+
+    meditationStopBtn.addEventListener('click', () => {
+      playChime('click');
+      if (confirm("Reset current meditation? Session statistics won't be saved.")) {
+        resetMeditationView();
+        stopAmbientSound();
+      }
+    });
+
+    // Preset selection logic
+    const medDurationBtns = document.querySelectorAll('.med-duration-btn');
+    medDurationBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        playChime('click');
+        medDurationBtns.forEach(b => {
+          b.className = "med-duration-btn py-2 px-1 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-400 hover:text-white transition-all hover:border-indigo-500/40";
+        });
+        
+        btn.className = "med-duration-btn py-2 px-1 rounded-xl bg-indigo-500 border border-transparent text-xs font-mono text-white transition-all active-med-btn";
+        
+        const minutes = parseInt(btn.getAttribute('data-mins'));
+        medState.totalDuration = minutes * 60;
+        resetMeditationView();
+      });
+    });
+
+    // Ambient Synthesizer selectors
+    const ambientTrackBtns = document.querySelectorAll('.ambient-track-btn');
+    ambientTrackBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        playChime('click');
+        ambientTrackBtns.forEach(b => {
+          b.className = "ambient-track-btn w-full flex items-center justify-between p-3 rounded-xl border border-slate-900 bg-slate-950 hover:border-slate-800 hover:bg-slate-900/60 text-slate-400 hover:text-slate-200 transition-all text-left";
+          const indicator = b.querySelector('#ambient-active-indicator');
+          if (indicator) indicator.remove();
+        });
+
+        btn.className = "ambient-track-btn w-full flex items-center justify-between p-3 rounded-xl border border-teal-500/40 bg-slate-900 text-slate-200 transition-all text-left";
+        
+        // Inject visual active badge
+        const badge = document.createElement('span');
+        badge.id = 'ambient-active-indicator';
+        badge.className = 'text-xs text-teal-400';
+        badge.textContent = 'Active';
+        btn.appendChild(badge);
+
+        const track = btn.getAttribute('data-track');
+        medState.selectedTrack = track;
+
+        // Restart with new frequency if already flowing
+        if (medState.isRunning) {
+          playAmbientSound(track);
+        }
+      });
+    });
+
+
+    // ================== TASK MANAGER SYSTEM ==================
+
+    todoForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = todoInput.value.trim();
+      if (!text) return;
+
+      const newTask = {
+        id: 'task_' + Date.now(),
+        text: text,
+        completed: false,
+        completedSessions: 0
+      };
+
+      state.tasks.push(newTask);
+      
+      // Auto-set as current active task if it's the first one
+      if (state.tasks.filter(t => !t.completed).length === 1) {
+        state.currentTaskId = newTask.id;
+      }
+
+      todoInput.value = '';
+      saveState();
+      renderTasks();
+      updateActiveTaskLabel();
+      showToast('Task Registered', 'Select the task circle to activate focus focus tracking.', 'check-square');
+    });
+
+    function renderTasks() {
+      const activeTasks = state.tasks.filter(t => !t.completed);
+      taskCount.textContent = `${activeTasks.length} active`;
+
+      if (state.tasks.length === 0) {
+        noTasks.classList.remove('hidden');
+        tasksList.innerHTML = '';
+        return;
+      }
+      noTasks.classList.add('hidden');
+
+      tasksList.innerHTML = '';
+
+      // Build and append list elements
+      state.tasks.forEach(task => {
+        const item = document.createElement('div');
+        const isActive = task.id === state.currentTaskId;
+
+        item.className = `group flex items-center justify-between p-3 rounded-2xl border transition-all duration-200 cursor-pointer ${
+          task.completed 
+            ? 'bg-slate-950/20 border-slate-900/50 opacity-55' 
+            : isActive 
+              ? 'bg-slate-900 border-rose-500/40 shadow-md shadow-rose-500/5' 
+              : 'bg-slate-950/60 border-slate-900 hover:border-slate-800'
+        }`;
+
+        // Listeners for setting task as active focused session
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.action-btn')) return; // Ignore if user clicks checking or delete
+          if (task.completed) return;
+
+          playChime('click');
+          state.currentTaskId = task.id;
+          saveState();
+          renderTasks();
+          updateActiveTaskLabel();
+          showToast('Focus Shifted', `Active session is now tracking: "${task.text}"`, 'target');
+        });
+
+        item.innerHTML = `
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <!-- Checkbox toggle button -->
+            <button class="action-btn flex items-center justify-center w-5 h-5 rounded-md border ${
+              task.completed 
+                ? 'bg-emerald-500 border-transparent text-slate-950' 
+                : 'border-slate-700 hover:border-rose-400 text-transparent hover:text-rose-400/30'
+            } transition-all" data-action="toggle-complete">
+              <i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
+            </button>
+            <span class="text-sm truncate font-medium ${task.completed ? 'line-through text-slate-500' : 'text-slate-200'}">
+              ${task.text}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-2 ml-4">
+            <!-- Pomodoro round counters -->
+            <div class="flex items-center gap-1 bg-slate-950/40 px-2 py-0.5 border border-slate-850 rounded-lg text-slate-400" title="Completed sessions for this task">
+              <i data-lucide="award" class="w-3 h-3 text-orange-400"></i>
+              <span class="text-[10px] font-bold mono">${task.completedSessions}</span>
+            </div>
+
+            <!-- Delete button -->
+            <button class="action-btn p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-slate-500 opacity-0 group-hover:opacity-100 transition-all" data-action="delete" title="Remove Task">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+
+        // Action Event delegation внутри items
+        item.querySelector('[data-action="toggle-complete"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          playChime('click');
+          task.completed = !task.completed;
+          
+          if (task.completed && task.id === state.currentTaskId) {
+            // Find another active task if current is finished
+            const nextActive = state.tasks.find(t => !t.completed);
+            state.currentTaskId = nextActive ? nextActive.id : null;
+          }
+
+          saveState();
+          renderTasks();
+          updateActiveTaskLabel();
+          
+          if (task.completed) {
+            showToast('Task Achieved!', `Excellent job ticking off: "${task.text}"`, 'check-circle-2');
+          }
+        });
+
+        item.querySelector('[data-action="delete"]').addEventListener('click', (e) => {
+          e.stopPropagation();
+          playChime('click');
+          state.tasks = state.tasks.filter(t => t.id !== task.id);
+          
+          if (task.id === state.currentTaskId) {
+            const nextActive = state.tasks.find(t => !t.completed);
+            state.currentTaskId = nextActive ? nextActive.id : null;
+          }
+
+          saveState();
+          renderTasks();
+          updateActiveTaskLabel();
+          showToast('Task Deleted', `Successfully removed: "${task.text}"`, 'trash-2');
+        });
+
+        tasksList.appendChild(item);
+      });
+
+      // Update newly inserted lucide icons
+      lucide.createIcons();
+    }
+
+
+    // ================== INITIAL SETUP RUNNER ==================
+    window.onload = function() {
+      loadSavedState();
+      
+      // Setup initial visual render
+      switchMode('pomodoro', false);
+      updateDailyGoalVisuals();
+      renderTasks();
+
+      // Trigger user sound interaction encouragement
+      setTimeout(() => {
+        showToast('Welcome to ZenFlow', 'Organize your mind. Focus and flourish.', 'compass');
+      }, 800);
+    };
+  </script>
+</body>
+</html>
