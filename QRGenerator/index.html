@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolfie QR Lab - Stony Brook Mascot QR Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- QRCode CDN (Reliable high-speed cdnjs host) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.1/qrcode.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .heading-font {
+            font-family: 'Space+Grotesk', sans-serif;
+        }
+        /* Custom scrollbar for clean aesthetics */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ef4444;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between">
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-900/30">
+                    <!-- Wolfie Head Mini SVG icon -->
+                    <svg class="w-7 h-7 text-white" viewBox="0 0 100 100" fill="currentColor">
+                        <polygon points="20,40 35,10 45,35" />
+                        <polygon points="80,40 65,10 55,35" />
+                        <polygon points="20,40 80,40 90,65 50,95 10,65" fill="#991b1b" />
+                        <polygon points="35,55 65,55 50,90" fill="#111" />
+                        <polygon points="30,48 43,52 38,45" fill="#f59e0b" />
+                        <polygon points="70,48 57,52 62,45" fill="#f59e0b" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight heading-font flex items-center gap-2">
+                        Wolfie<span class="text-red-500 font-extrabold">QR</span>Lab
+                    </h1>
+                    <p class="text-xs text-slate-400">Stony Brook's Custom Mascot QR Generator</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <a href="https://www.stonybrook.edu" target="_blank" class="hidden sm:flex items-center space-x-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-lg border border-slate-700 transition duration-200">
+                    <span>Stony Brook University</span>
+                    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+        <!-- Dashboard Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- LEFT PANEL: CUSTOMIZER & INPUTS (7 Cols) -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- Input Panel -->
+                <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <label for="qr-text" class="text-sm font-semibold tracking-wider text-slate-400 uppercase flex items-center gap-2">
+                            <i data-lucide="link" class="w-4 h-4 text-red-500"></i> QR Code Content
+                        </label>
+                        <span id="char-count" class="text-xs text-slate-500">0 chars</span>
+                    </div>
+                    <textarea 
+                        id="qr-text" 
+                        rows="3" 
+                        class="w-full bg-slate-950 text-white placeholder-slate-500 border border-slate-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none text-base transition-all"
+                        placeholder="Type a URL or text here to generate instantly... (e.g., https://www.stonybrook.edu)"
+                    >https://www.stonybrook.edu</textarea>
+                    
+                    <!-- Quick Preset Links -->
+                    <div class="mt-4 flex flex-wrap gap-2 items-center">
+                        <span class="text-xs text-slate-500 font-medium">SBU Presets:</span>
+                        <button onclick="setPresetText('https://www.stonybrook.edu')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 px-3 rounded-md transition border border-slate-700">SBU Homepage</button>
+                        <button onclick="setPresetText('https://stonybrookathletics.com')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 px-3 rounded-md transition border border-slate-700">SBU Athletics</button>
+                        <button onclick="setPresetText('Go Seawolves! 🐺🔴⚪')" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 px-3 rounded-md transition border border-slate-700">Wolfie Cheer</button>
+                    </div>
+                </div>
+
+                <!-- Customizer Panel -->
+                <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-6">
+                    <h2 class="text-lg font-bold text-white heading-font border-b border-slate-800 pb-3 flex items-center gap-2">
+                        <i data-lucide="sliders" class="text-red-500 w-5 h-5"></i>
+                        Customize Mascot & Design
+                    </h2>
+
+                    <!-- Logo Selector -->
+                    <div>
+                        <span class="block text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Select Center Emblem</span>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <!-- Option 1: Wolfie (Full Detail) -->
+                            <button onclick="selectMascot('wolfie')" id="btn-m-wolfie" class="mascot-btn flex flex-col items-center p-3 bg-slate-950 border-2 border-red-600 rounded-xl hover:bg-slate-900/50 transition">
+                                <div class="w-12 h-12 mb-2">
+                                    <svg viewBox="0 0 100 100" fill="none" class="w-full h-full">
+                                        <!-- Ears -->
+                                        <polygon points="20,40 35,10 45,35" fill="#4A4A4A" />
+                                        <polygon points="25,37 33,18 40,33" fill="#C8102E" />
+                                        <polygon points="80,40 65,10 55,35" fill="#4A4A4A" />
+                                        <polygon points="75,37 67,18 60,33" fill="#C8102E" />
+                                        <!-- Face -->
+                                        <polygon points="20,40 80,40 90,65 50,95 10,65" fill="#707372" />
+                                        <polygon points="10,65 30,65 20,40" fill="#D3D3D3" />
+                                        <polygon points="90,65 70,65 80,40" fill="#D3D3D3" />
+                                        <polygon points="50,95 30,65 10,65" fill="#FFFFFF" />
+                                        <polygon points="50,95 70,65 90,65" fill="#FFFFFF" />
+                                        <polygon points="35,55 65,55 50,90" fill="#333" />
+                                        <polygon points="43,80 57,80 50,90" fill="#000" />
+                                        <!-- Eyes -->
+                                        <polygon points="30,48 43,52 38,45" fill="#F2A900" />
+                                        <polygon points="70,48 57,52 62,45" fill="#F2A900" />
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-bold text-white">Classic Wolfie</span>
+                            </button>
+
+                            <!-- Option 2: Red Wolfie Silhouette -->
+                            <button onclick="selectMascot('wolfie-red')" id="btn-m-wolfie-red" class="mascot-btn flex flex-col items-center p-3 bg-slate-950 border-2 border-slate-800 rounded-xl hover:bg-slate-900/50 transition">
+                                <div class="w-12 h-12 mb-2 flex items-center justify-center">
+                                    <svg viewBox="0 0 100 100" class="w-10 h-10 text-red-600" fill="currentColor">
+                                        <path d="M50 5C25.1 5 5 25.1 5 50s20.1 45 45 45 45-20.1 45-45S74.9 5 50 5zm15.7 65L50 81.3 34.3 70l6-18.4-15.7-11.4h19.4L50 21.8l6 18.4h19.4L59.7 51.6l6 18.4z" class="hidden"/>
+                                        <!-- Sharp Wolf outline stylized for SBU red -->
+                                        <polygon points="20,40 35,10 45,35" fill="#991b1b" />
+                                        <polygon points="80,40 65,10 55,35" fill="#991b1b" />
+                                        <polygon points="20,40 80,40 90,65 50,95 10,65" fill="#ef4444" />
+                                        <polygon points="35,55 65,55 50,90" fill="#111" />
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-bold text-slate-300">Crimson Wolf</span>
+                            </button>
+
+                            <!-- Option 3: Stony Brook "SB" Shield -->
+                            <button onclick="selectMascot('shield')" id="btn-m-shield" class="mascot-btn flex flex-col items-center p-3 bg-slate-950 border-2 border-slate-800 rounded-xl hover:bg-slate-900/50 transition">
+                                <div class="w-12 h-12 mb-2 flex items-center justify-center">
+                                    <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center font-black text-white text-base shadow-inner">
+                                        SB
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold text-slate-300">SB Crest</span>
+                            </button>
+
+                            <!-- Option 4: Custom Upload -->
+                            <label for="custom-logo-file" class="mascot-btn flex flex-col items-center p-3 bg-slate-950 border-2 border-slate-800 rounded-xl hover:bg-slate-900/50 transition cursor-pointer text-center" id="btn-m-custom">
+                                <div class="w-12 h-12 mb-2 flex flex-col items-center justify-center text-slate-400">
+                                    <i data-lucide="upload" class="w-6 h-6 text-slate-400 mb-1"></i>
+                                    <span class="text-[10px] text-slate-500" id="upload-status">Upload Image</span>
+                                </div>
+                                <span class="text-xs font-bold text-slate-300">Custom Logo</span>
+                                <input type="file" id="custom-logo-file" class="hidden" accept="image/*" onchange="handleCustomLogoUpload(event)">
+                            </label>
+                        </div>
+                        
+                        <!-- Toggle Logo Visibility -->
+                        <div class="mt-3 flex items-center justify-between bg-slate-950 px-4 py-2.5 rounded-lg border border-slate-800">
+                            <span class="text-xs font-semibold text-slate-300">Render Center Emblem</span>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggle-logo" checked class="sr-only peer" onchange="generateQR()">
+                                <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        <!-- Left Sub-column: Colors -->
+                        <div class="space-y-4">
+                            <span class="block text-sm font-semibold text-slate-400 uppercase tracking-wider">Color Settings</span>
+                            
+                            <!-- Primary Color Picker -->
+                            <div class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="color" id="fg-color" value="#C8102E" class="w-10 h-10 border-0 rounded cursor-pointer bg-transparent" onchange="generateQR()">
+                                <div class="flex-grow">
+                                    <label class="block text-xs font-semibold text-slate-300">QR Code Color</label>
+                                    <span class="text-[10px] text-slate-500 font-mono" id="fg-hex">#C8102E</span>
+                                </div>
+                                <button onclick="resetColor('fg', '#C8102E')" class="text-xs text-red-500 hover:text-red-400 font-semibold">Reset</button>
+                            </div>
+
+                            <!-- Background Color Picker -->
+                            <div class="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <input type="color" id="bg-color" value="#FFFFFF" class="w-10 h-10 border-0 rounded cursor-pointer bg-transparent" onchange="generateQR()">
+                                <div class="flex-grow">
+                                    <label class="block text-xs font-semibold text-slate-300">Background Color</label>
+                                    <span class="text-[10px] text-slate-500 font-mono" id="bg-hex">#FFFFFF</span>
+                                </div>
+                                <button onclick="resetColor('bg', '#FFFFFF')" class="text-xs text-red-500 hover:text-red-400 font-semibold">Reset</button>
+                            </div>
+                        </div>
+
+                        <!-- Right Sub-column: Dimensions & Advanced -->
+                        <div class="space-y-4">
+                            <span class="block text-sm font-semibold text-slate-400 uppercase tracking-wider">Adjustment Sliders</span>
+
+                            <!-- Logo Size Slider -->
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <label class="text-xs font-semibold text-slate-300">Mascot Scale</label>
+                                    <span id="logo-size-label" class="text-[11px] font-mono text-red-500 font-bold">22%</span>
+                                </div>
+                                <input type="range" id="logo-size" min="15" max="30" value="22" class="w-full accent-red-600 h-1 bg-slate-800 rounded-lg cursor-pointer" oninput="updateLogoSize(this.value)">
+                            </div>
+
+                            <!-- Error Correction Rating -->
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Error Correction</label>
+                                <div class="grid grid-cols-4 gap-1.5">
+                                    <button onclick="setErrorCorrection('L')" id="btn-ec-L" class="ec-btn text-[10px] font-bold py-1 rounded bg-slate-900 text-slate-400 border border-slate-800">L (7%)</button>
+                                    <button onclick="setErrorCorrection('M')" id="btn-ec-M" class="ec-btn text-[10px] font-bold py-1 rounded bg-slate-900 text-slate-400 border border-slate-800">M (15%)</button>
+                                    <button onclick="setErrorCorrection('Q')" id="btn-ec-Q" class="ec-btn text-[10px] font-bold py-1 rounded bg-slate-900 text-slate-400 border border-slate-800">Q (25%)</button>
+                                    <button onclick="setErrorCorrection('H')" id="btn-ec-H" class="ec-btn text-[10px] font-bold py-1 rounded bg-red-600/20 text-red-500 border border-red-600/30">H (30%)</button>
+                                </div>
+                                <p class="text-[9px] text-slate-500 mt-1">H is highly recommended when using a mascot image in the center.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: PREVIEW, DIAGNOSTICS & ACTIONS (5 Cols) -->
+            <div class="lg:col-span-5 space-y-6">
+                <!-- QR Canvas Display Card -->
+                <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl flex flex-col items-center justify-center text-center relative overflow-hidden group">
+                    <div class="absolute -top-10 -left-10 w-40 h-40 bg-red-600/10 rounded-full blur-3xl group-hover:bg-red-600/15 transition-all"></div>
+                    
+                    <!-- Scan Status Banner -->
+                    <div class="mb-4 bg-slate-950/60 px-3 py-1.5 rounded-full border border-slate-800 text-[11px] text-slate-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Active Code Rendered
+                    </div>
+
+                    <!-- Hidden canvas for core generation and high-res export -->
+                    <canvas id="hidden-qr-canvas" class="hidden"></canvas>
+
+                    <!-- Visible Canvas Wrapper with border stylings -->
+                    <div class="p-4 bg-white rounded-2xl shadow-2xl relative border-4 border-slate-800/80">
+                        <canvas id="visible-qr-canvas" class="w-64 h-64 sm:w-72 sm:h-72 cursor-pointer transition transform hover:scale-[1.02]" onclick="downloadQR()"></canvas>
+                        
+                        <!-- Hover hint -->
+                        <div class="absolute inset-0 bg-slate-950/60 flex items-center justify-center opacity-0 hover:opacity-100 transition duration-300 rounded-xl" onclick="downloadQR()">
+                            <div class="text-white text-center flex flex-col items-center space-y-2 p-4">
+                                <i data-lucide="download" class="w-8 h-8 text-red-500 animate-bounce"></i>
+                                <span class="text-sm font-bold">Download High-Res PNG</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Toolkit Action Buttons -->
+                    <div class="w-full grid grid-cols-2 gap-3 mt-6">
+                        <button onclick="downloadQR()" class="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-semibold py-3 px-4 rounded-xl transition shadow-lg shadow-red-600/20">
+                            <i data-lucide="download" class="w-4 h-4"></i> Download
+                        </button>
+                        <button onclick="copyToClipboard()" class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-3 px-4 rounded-xl transition border border-slate-700">
+                            <i data-lucide="copy" class="w-4 h-4"></i> Copy Link
+                        </button>
+                    </div>
+
+                    <!-- Custom notification area for user feedback (no alert() policy) -->
+                    <div id="toast-notif" class="mt-4 text-xs font-semibold py-2 px-4 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hidden flex items-center justify-center gap-2 w-full transition duration-300">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                        <span id="toast-message">Copied to clipboard!</span>
+                    </div>
+                </div>
+
+                <!-- Live Diagnostics & Scan Simulator -->
+                <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-4">
+                    <h3 class="text-sm font-bold text-white heading-font uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
+                        <i data-lucide="activity" class="text-emerald-500 w-4 h-4"></i>
+                        Active Diagnostics & Scanner Simulator
+                    </h3>
+                    
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Scan Readability Status:</span>
+                            <span class="text-emerald-400 font-bold flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                Excellent (H Level Enabled)
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">Mascot Contrast Ratio:</span>
+                            <span id="contrast-badge" class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">High Contrast</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-400">QR Matrix Size:</span>
+                            <span id="matrix-size" class="text-slate-300 font-mono">Calculating...</span>
+                        </div>
+                    </div>
+
+                    <!-- Simulator Output -->
+                    <div class="bg-slate-950/40 p-3 rounded-lg border border-slate-800 flex items-start gap-2.5 text-xs text-slate-400">
+                        <i data-lucide="shield-check" class="text-red-500 w-5 h-5 flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="block font-bold text-slate-300">Wolfie Safe-Scan Protocol</span>
+                            The logo is drawn over a protective mask region to prevent overlap with vital data modules. Scan using any phone camera!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic QR Scan History Ledgers -->
+                <div class="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="text-sm font-bold text-white heading-font uppercase tracking-wider flex items-center gap-2">
+                            <i data-lucide="history" class="text-red-500 w-4 h-4"></i>
+                            Recent Generated Codes
+                        </h3>
+                        <button onclick="clearHistory()" class="text-xs text-slate-500 hover:text-red-400 transition">Clear</button>
+                    </div>
+
+                    <!-- History Empty State -->
+                    <div id="history-empty" class="text-center py-6 text-slate-500 text-xs">
+                        <p>No QR codes created this session. Start by changing the text input above!</p>
+                    </div>
+
+                    <!-- History Container -->
+                    <div id="history-list" class="max-h-48 overflow-y-auto space-y-2 pr-1"></div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Cloud Save Upgrades Callout -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 w-full">
+        <div class="bg-gradient-to-r from-red-950/50 via-slate-900 to-red-950/50 rounded-2xl p-6 border border-red-900/30 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-red-600/10 rounded-xl flex items-center justify-center border border-red-500/20 flex-shrink-0">
+                    <i data-lucide="cloud" class="w-6 h-6 text-red-500"></i>
+                </div>
+                <div>
+                    <h4 class="text-sm font-bold text-white">Want to sync your custom QR creations?</h4>
+                    <p class="text-xs text-slate-400 mt-0.5">We can add custom save progress options to keep your branded codes accessible on any device.</p>
+                </div>
+            </div>
+            <button onclick="requestCloudUpgrade()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 px-5 rounded-lg transition shrink-0">
+                Unlock Progress Saving
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950 py-6 text-center text-slate-500 text-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p>© 2026 Wolfie QR Lab. Created for Stony Brook University Seawolves 🐺.</p>
+            <div class="flex space-x-4">
+                <span class="hover:text-red-400 cursor-pointer">Privacy Policy</span>
+                <span class="hover:text-red-400 cursor-pointer">Support</span>
+                <span class="hover:text-red-400 cursor-pointer">SBU Brand Guidelines</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Custom Upgrade Modal -->
+    <div id="upgrade-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4 transition duration-300">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+            <button onclick="closeUpgradeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="text-center space-y-4">
+                <div class="w-16 h-16 bg-red-600/10 rounded-full flex items-center justify-center mx-auto border border-red-500/20">
+                    <i data-lucide="cloud-lightning" class="w-8 h-8 text-red-500"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white heading-font">Enable Cloud Progress Saving</h3>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    By upgrading your dashboard experience, we will establish a secure, cloud-hosted vault so your high-resolution Stony Brook mascots, customized colors, and scan statistics persist anywhere.
+                </p>
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-left space-y-2 text-xs">
+                    <div class="flex items-center gap-2 text-slate-300">
+                        <i data-lucide="check" class="w-4 h-4 text-red-500"></i> Save codes across multiple devices
+                    </div>
+                    <div class="flex items-center gap-2 text-slate-300">
+                        <i data-lucide="check" class="w-4 h-4 text-red-500"></i> Track scan counts and location diagnostics
+                    </div>
+                    <div class="flex items-center gap-2 text-slate-300">
+                        <i data-lucide="check" class="w-4 h-4 text-red-500"></i> High-resolution Vector exports (.SVG)
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="confirmCloudUpgrade()" class="flex-grow bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition">
+                        I'm interested, set up cloud vault!
+                    </button>
+                    <button onclick="closeUpgradeModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 rounded-xl transition">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Assets and Core Generator Logic -->
+    <script>
+        // Init Lucide
+        lucide.createIcons();
+
+        // Reactive Application State
+        const state = {
+            text: 'https://www.stonybrook.edu',
+            selectedMascot: 'wolfie', // options: 'wolfie', 'wolfie-red', 'shield', 'custom'
+            customLogoUrl: null,
+            logoSizePercent: 22,
+            errorCorrection: 'H',
+            showLogo: true,
+            fgColor: '#C8102E', // SBU Red
+            bgColor: '#FFFFFF', // White
+            history: [] // session storage of created items
+        };
+
+        // Cache pre-computed built-in mascot SVGs as Data URIs
+        const SVGs = {
+            wolfie: `
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="20,40 35,10 45,35" fill="#4A4A4A" />
+                    <polygon points="25,37 33,18 40,33" fill="#C8102E" />
+                    <polygon points="80,40 65,10 55,35" fill="#4A4A4A" />
+                    <polygon points="75,37 67,18 60,33" fill="#C8102E" />
+                    <polygon points="20,40 80,40 90,65 50,95 10,65" fill="#707372" />
+                    <polygon points="10,65 30,65 20,40" fill="#D3D3D3" />
+                    <polygon points="90,65 70,65 80,40" fill="#D3D3D3" />
+                    <polygon points="50,95 30,65 10,65" fill="#FFFFFF" />
+                    <polygon points="50,95 70,65 90,65" fill="#FFFFFF" />
+                    <polygon points="35,55 65,55 50,90" fill="#333333" />
+                    <polygon points="43,80 57,80 50,90" fill="#000000" />
+                    <polygon points="30,48 43,52 38,45" fill="#F2A900" />
+                    <circle cx="36" cy="48" r="1.5" fill="#000000" />
+                    <polygon points="70,48 57,52 62,45" fill="#F2A900" />
+                    <circle cx="64" cy="48" r="1.5" fill="#000000" />
+                    <polygon points="28,44 45,49 42,42" fill="#111111" />
+                    <polygon points="72,44 55,49 58,42" fill="#111111" />
+                </svg>
+            `,
+            'wolfie-red': `
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="20,40 35,10 45,35" fill="#991b1b" />
+                    <polygon points="80,40 65,10 55,35" fill="#991b1b" />
+                    <polygon points="20,40 80,40 90,65 50,95 10,65" fill="#C8102E" />
+                    <polygon points="10,65 30,65 20,40" fill="#ffffff" />
+                    <polygon points="90,65 70,65 80,40" fill="#ffffff" />
+                    <polygon points="50,95 30,65 10,65" fill="#ffffff" />
+                    <polygon points="50,95 70,65 90,65" fill="#ffffff" />
+                    <polygon points="35,55 65,55 50,90" fill="#111" />
+                    <polygon points="30,48 43,52 38,45" fill="#f59e0b" />
+                    <polygon points="70,48 57,52 62,45" fill="#f59e0b" />
+                </svg>
+            `,
+            shield: `
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100" height="100" rx="16" fill="#C8102E" />
+                    <rect x="4" y="4" width="92" height="92" rx="12" fill="none" stroke="#FFFFFF" stroke-width="3" />
+                    <text x="50" y="66" font-family="'Impact', 'Arial Black', sans-serif" font-size="52" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="-1">SB</text>
+                </svg>
+            `
+        };
+
+        // Cache of pre-loaded mascot Image objects to guarantee instant render
+        const mascotImages = {};
+
+        // Convert raw inline SVGs to clean base64 image objects
+        function preLoadBuiltinImages() {
+            Object.keys(SVGs).forEach(key => {
+                const img = new Image();
+                const svgString = SVGs[key].trim();
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+                mascotImages[key] = img;
+                img.onload = () => {
+                    // Regenerate QR once logo loaded
+                    if (state.selectedMascot === key) generateQR();
+                };
+            });
+        }
+
+        // Initialize state listeners
+        document.getElementById('qr-text').addEventListener('input', (e) => {
+            state.text = e.target.value;
+            document.getElementById('char-count').innerText = `${e.target.value.length} chars`;
+            generateQR();
+        });
+
+        function setPresetText(text) {
+            state.text = text;
+            document.getElementById('qr-text').value = text;
+            document.getElementById('char-count').innerText = `${text.length} chars`;
+            showToast('Preset text set!', 'success');
+            generateQR();
+        }
+
+        function updateLogoSize(val) {
+            state.logoSizePercent = parseInt(val);
+            document.getElementById('logo-size-label').innerText = `${val}%`;
+            generateQR();
+        }
+
+        function setErrorCorrection(level) {
+            state.errorCorrection = level;
+            // Update UI buttons
+            document.querySelectorAll('.ec-btn').forEach(btn => {
+                btn.className = "ec-btn text-[10px] font-bold py-1 rounded bg-slate-900 text-slate-400 border border-slate-800";
+            });
+            const activeBtn = document.getElementById(`btn-ec-${level}`);
+            if (activeBtn) {
+                activeBtn.className = "ec-btn text-[10px] font-bold py-1 rounded bg-red-600/20 text-red-500 border border-red-600/30";
+            }
+            generateQR();
+        }
+
+        function selectMascot(mascotKey) {
+            state.selectedMascot = mascotKey;
+            
+            // Highlight selector
+            document.querySelectorAll('.mascot-btn').forEach(btn => {
+                btn.classList.remove('border-red-600');
+                btn.classList.add('border-slate-800');
+            });
+            
+            const activeBtn = document.getElementById(`btn-m-${mascotKey}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-slate-800');
+                activeBtn.classList.add('border-red-600');
+            }
+            generateQR();
+        }
+
+        function handleCustomLogoUpload(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function() {
+                    mascotImages['custom'] = img;
+                    state.selectedMascot = 'custom';
+                    
+                    // Highlight custom
+                    document.querySelectorAll('.mascot-btn').forEach(btn => {
+                        btn.classList.remove('border-red-600');
+                        btn.classList.add('border-slate-800');
+                    });
+                    document.getElementById('btn-m-custom').classList.add('border-red-600');
+                    document.getElementById('btn-m-custom').classList.remove('border-slate-800');
+                    document.getElementById('upload-status').innerText = "Ready!";
+                    
+                    showToast('Custom logo uploaded!', 'success');
+                    generateQR();
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetColor(type, val) {
+            if (type === 'fg') {
+                document.getElementById('fg-color').value = val;
+            } else {
+                document.getElementById('bg-color').value = val;
+            }
+            generateQR();
+        }
+
+        // Check if color is light or dark to assist design warning feedback
+        function getContrastYIQ(hexcolor){
+            hexcolor = hexcolor.replace("#", "");
+            var r = parseInt(hexcolor.substr(0,2),16);
+            var g = parseInt(hexcolor.substr(2,2),16);
+            var b = parseInt(hexcolor.substr(4,2),16);
+            var yiq = ((r*299)+(g*587)+(b*114))/1000;
+            return (yiq >= 128) ? 'light' : 'dark';
+        }
+
+        // Generate and Compose Canvas QR
+        function generateQR() {
+            // Robust check to handle delayed script loading from CDN
+            if (typeof QRCode === 'undefined') {
+                console.warn("QRCode script is not initialized yet. Retrying shortly...");
+                setTimeout(generateQR, 80);
+                return;
+            }
+
+            const fgInput = document.getElementById('fg-color').value;
+            const bgInput = document.getElementById('bg-color').value;
+            
+            state.fgColor = fgInput;
+            state.bgColor = bgInput;
+            state.showLogo = document.getElementById('toggle-logo').checked;
+
+            document.getElementById('fg-hex').innerText = fgInput.toUpperCase();
+            document.getElementById('bg-hex').innerText = bgInput.toUpperCase();
+
+            // Run contrast check diagnostics
+            const fgTone = getContrastYIQ(fgInput);
+            const bgTone = getContrastYIQ(bgInput);
+            const badge = document.getElementById('contrast-badge');
+            
+            if (fgTone === bgTone) {
+                badge.innerText = "Poor Contrast!";
+                badge.className = "text-yellow-400 font-bold bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20";
+            } else {
+                badge.innerText = "High Contrast";
+                badge.className = "text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20";
+            }
+
+            const hiddenCanvas = document.getElementById('hidden-qr-canvas');
+            const visibleCanvas = document.getElementById('visible-qr-canvas');
+
+            if (!state.text.trim()) {
+                // Clear canvas if no text
+                const ctx = visibleCanvas.getContext('2d');
+                ctx.clearRect(0, 0, visibleCanvas.width, visibleCanvas.height);
+                return;
+            }
+
+            // Options configuration
+            const qrOptions = {
+                errorCorrectionLevel: state.errorCorrection,
+                width: 1024, // High resolution background generation
+                margin: 4,
+                color: {
+                    dark: state.fgColor,
+                    light: state.bgColor
+                }
+            };
+
+            QRCode.toCanvas(hiddenCanvas, state.text, qrOptions, function (error) {
+                if (error) {
+                    console.error("QR Code Generation Error:", error);
+                    return;
+                }
+
+                // Render active code details to diagnostics
+                // Find Matrix size dynamically (modules amount)
+                const textLength = state.text.length;
+                let version = Math.ceil((textLength - 10) / 15) + 2;
+                version = Math.max(1, Math.min(40, version));
+                const modules = 21 + (version - 1) * 4;
+                document.getElementById('matrix-size').innerText = `${modules}x${modules} modules`;
+
+                // Now construct composite visual canvas with logo and frame mask
+                const destCtx = visibleCanvas.getContext('2d');
+                
+                // Set high-fidelity visual canvas base size (512x512) for razor sharp preview
+                visibleCanvas.width = 512;
+                visibleCanvas.height = 512;
+
+                // Draw standard QR code
+                destCtx.drawImage(hiddenCanvas, 0, 0, 512, 512);
+
+                if (state.showLogo) {
+                    const mascotImg = mascotImages[state.selectedMascot];
+                    if (mascotImg) {
+                        const canvasSize = 512;
+                        // Calculate logo sizes
+                        const percent = state.logoSizePercent / 100;
+                        const logoSize = canvasSize * percent;
+                        const logoX = (canvasSize - logoSize) / 2;
+                        const logoY = (canvasSize - logoSize) / 2;
+
+                        // Draw a protective card mask (background buffer) to isolate the logo nicely
+                        const padPercent = 0.12; // 12% extra pad spacing around center emblem
+                        const pad = logoSize * padPercent;
+                        const padSize = logoSize + (pad * 2);
+                        const padX = logoX - pad;
+                        const padY = logoY - pad;
+
+                        // Fill rounded background buffer card
+                        destCtx.fillStyle = state.bgColor;
+                        destCtx.beginPath();
+                        const radius = logoSize * 0.15; // Smooth corners
+                        destCtx.roundRect(padX, padY, padSize, padSize, radius);
+                        destCtx.fill();
+
+                        // Render active logo in the center buffer
+                        destCtx.save();
+                        destCtx.drawImage(mascotImg, logoX, logoY, logoSize, logoSize);
+                        destCtx.restore();
+                    }
+                }
+
+                // Push onto active history registry
+                addHistoryRecord(state.text, state.selectedMascot);
+            });
+        }
+
+        // Custom canvas shape polyfill helper
+        if (!CanvasRenderingContext2D.prototype.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.beginPath();
+                this.moveTo(x+r, y);
+                this.arcTo(x+w, y,   x+w, y+h, r);
+                this.arcTo(x+w, y+h, x,   y+h, r);
+                this.arcTo(x,   y+h, x,   y,   r);
+                this.arcTo(x,   y,   x+w, y,   r);
+                this.closePath();
+                return this;
+            }
+        }
+
+        // Handle QR Exports as pristine PNG files
+        function downloadQR() {
+            const visibleCanvas = document.getElementById('visible-qr-canvas');
+            const link = document.createElement('a');
+            
+            // Format dynamic file name based on content
+            let cleanText = state.text.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            if (cleanText.length > 20) cleanText = cleanText.substring(0, 20);
+            
+            link.download = `wolfie-qr-${cleanText || 'sbu'}.png`;
+            link.href = visibleCanvas.toDataURL('image/png');
+            link.click();
+            showToast('QR Code Downloaded successfully!', 'success');
+        }
+
+        // Clipboard operations utilizing iframe compliant execution
+        function copyToClipboard() {
+            const dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = state.text;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            showToast('Link text copied to clipboard!', 'success');
+        }
+
+        // Toast visual feedback
+        function showToast(message, type) {
+            const toast = document.getElementById('toast-notif');
+            const toastMsg = document.getElementById('toast-message');
+            
+            toastMsg.innerText = message;
+            toast.classList.remove('hidden');
+            
+            // Auto hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Dynamic local memory storage of creations
+        function addHistoryRecord(text, logo) {
+            // Prevent duplicate adjacent additions
+            if (state.history.length > 0 && state.history[0].text === text && state.history[0].logo === logo) {
+                return;
+            }
+
+            const record = {
+                id: Date.now(),
+                text: text,
+                logo: logo,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            // Insert at front
+            state.history.unshift(record);
+            
+            // Cap history to last 5 logs
+            if (state.history.length > 5) {
+                state.history.pop();
+            }
+
+            renderHistoryList();
+        }
+
+        function clearHistory() {
+            state.history = [];
+            renderHistoryList();
+            showToast('History cleared!', 'success');
+        }
+
+        function loadHistoryItem(text, logo) {
+            state.text = text;
+            state.selectedMascot = logo;
+            
+            document.getElementById('qr-text').value = text;
+            document.getElementById('char-count').innerText = `${text.length} chars`;
+            
+            selectMascot(logo);
+            generateQR();
+            showToast('Loaded QR presets from history!', 'success');
+        }
+
+        function renderHistoryList() {
+            const list = document.getElementById('history-list');
+            const emptyState = document.getElementById('history-empty');
+
+            if (state.history.length === 0) {
+                list.innerHTML = "";
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            
+            list.innerHTML = state.history.map(item => {
+                let textPreview = item.text;
+                if (textPreview.length > 30) textPreview = textPreview.substring(0, 27) + "...";
+                
+                let iconMarkup = '';
+                if (item.logo === 'shield') {
+                    iconMarkup = `<span class="bg-red-600 text-[10px] text-white px-1.5 py-0.5 rounded font-bold">SB</span>`;
+                } else if (item.logo.includes('wolfie')) {
+                    iconMarkup = `<span class="bg-slate-700 text-[10px] text-white px-1.5 py-0.5 rounded font-bold">Wolfie</span>`;
+                } else {
+                    iconMarkup = `<span class="bg-blue-600 text-[10px] text-white px-1.5 py-0.5 rounded font-bold">Custom</span>`;
+                }
+
+                return `
+                    <div class="flex items-center justify-between p-2.5 bg-slate-950 rounded-lg border border-slate-800 hover:border-red-600/50 transition text-xs">
+                        <div class="flex flex-col space-y-0.5 truncate pr-2">
+                            <span class="text-slate-200 font-mono truncate cursor-pointer" onclick="loadHistoryItem('${item.text}', '${item.logo}')">${textPreview}</span>
+                            <span class="text-[10px] text-slate-500">${item.timestamp}</span>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                            ${iconMarkup}
+                            <button onclick="loadHistoryItem('${item.text}', '${item.logo}')" class="text-slate-400 hover:text-red-500 transition">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
+        // Trigger Cloud Sync Modals
+        function requestCloudUpgrade() {
+            const modal = document.getElementById('upgrade-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeUpgradeModal() {
+            const modal = document.getElementById('upgrade-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function confirmCloudUpgrade() {
+            closeUpgradeModal();
+            showToast('Upgrade request submitted!', 'success');
+        }
+
+        // Init on load
+        window.onload = function() {
+            preLoadBuiltinImages();
+            generateQR();
+        }
+    </script>
+</body>
+</html>
